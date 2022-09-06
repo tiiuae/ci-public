@@ -1,0 +1,14 @@
+pipeline {
+    // Please change label to your executor agent name
+    agent { label 'NotInUse' }
+    stages {
+        stage('run') {
+            environment {
+                PATH="$PATH:/nix/var/nix/profiles/default/bin/"
+            }
+            steps {
+                sh "/var/lib/jenkins/.local/bin/vulnix ${params.image}"
+            }
+        }
+    }
+}
