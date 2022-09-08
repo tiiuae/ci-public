@@ -1,0 +1,64 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1182.v60a_e6279b_579">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2086.v12b_420f036e5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2086.v12b_420f036e5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2706.v71dd22b_c5a_a_2">
+    <script>pipeline {
+    agent { label &apos;NotInUse&apos; }
+    environment {
+        myVar=&quot;ABCDE&quot;
+    }
+    stages {
+        stage(&apos;Clean&apos;) {
+            steps {
+                sh &apos;rm -rf spectrum&apos;
+                sh &apos;/nix/var/nix/profiles/default/bin/nix-store --gc&apos;
+            }
+        }
+        stage(&apos;Clone&apos;) {
+            steps {
+                //sh &apos;git clone https://spectrum-os.org/git/spectrum/&apos;
+                sh &apos;git clone https://github.com/tiiuae/spectrum.git&apos;
+                // sh &apos;git clone https://github.com/tiiuae/nixpkgs-spectrum.git&apos;
+                sh &apos;cd spectrum; git checkout x86-nuc&apos;
+                sh &apos;cd ..&apos;
+                sh &apos;cd nixpkgs-spectrum; git checkout x86-nuc&apos;
+                sh &apos;cd ..&apos;
+                
+            }
+        }
+        stage(&apos;Build&apos;) {
+            steps {
+                sh &apos;hostname&apos;
+                sh &apos;/nix/var/nix/profiles/default/bin/nix-build spectrum/img/combined -I nixpkgs=nixpkgs-spectrum&apos;
+            }
+        }
+        stage(&apos;Vulnix&apos;) {
+            steps {
+                sh &apos;export myvar=`readlink -f ./result`&apos;
+                echo &quot;${myvar}&quot;
+                build job: &apos;vulnix&apos;, parameters: [string(name: &apos;image&apos;, value:&apos;./result&apos;)]
+            }
+        }
+    }
+}
+
+
+
+
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

@@ -1,0 +1,67 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1207.ve6191ff089f8">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2114.v2654ca_721309"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2114.v2654ca_721309">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2759.v87459c4eea_ca_">
+    <script>pipeline {
+    agent { label &apos;NotInUse&apos; }
+    environment {
+        myVar=&quot;ABCDE&quot;
+    }
+    stages {
+        stage(&apos;Clean&apos;) {
+            steps {
+                sh &apos;rm -rf spectrum&apos;
+                sh &apos;rm -rf result&apos;
+                sh &apos;rm -rf *.json&apos;
+                sh &apos;/nix/var/nix/profiles/default/bin/nix-store --gc&apos;
+            }
+        }
+        stage(&apos;Clone&apos;) {
+            steps {
+                sh &apos;git clone https://spectrum-os.org/git/spectrum/&apos;
+                sh &apos;ls&apos;
+            }
+        }
+        stage(&apos;Build&apos;) {
+            steps {
+                sh &apos;hostname&apos;
+                sh &apos;/nix/var/nix/profiles/default/bin/nix-build spectrum/img/combined -I nixpkgs=https://spectrum-os.org/git/nixpkgs/snapshot/nixpkgs-rootfs.tar.gz&apos;
+            }
+        }
+        stage(&apos;Vulnix&apos;) {
+            steps {
+                //script {
+                //    IMAGE_NAME = sh (
+                 //       script: &apos;readlink -f ./result&apos;,
+                 //       returnStdout: true
+                 //   ).trim()
+                    //echo &quot;${IMAGE_NAME}&quot;
+                    //build job: &apos;vulnix&apos;, parameters: [string(name: &apos;image&apos;, value:${IMAGE_NAME})]
+                //}
+                sh &apos;export PATH=$PATH:/nix/var/nix/profiles/default/bin/; /var/lib/jenkins/.local/bin/vulnix -jD ./result &gt; vulnerabilities.json; echo OK&apos;
+               // sh &apos;export PATH=$PATH:/nix/var/nix/profiles/default/bin/; /var/lib/jenkins/.local/bin/vulnix -D ./result&apos;
+            }
+        }
+    }
+}
+
+
+
+
+</script>
+    <sandbox>false</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
