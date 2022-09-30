@@ -15,7 +15,7 @@ import os
 def convert_int(str, default = 0):
     try:
         i = int(str)
-    except ValueError:
+    except (ValueError, TypeError):
         i = default
     return i
 
@@ -46,9 +46,9 @@ def get_page(urlctx, url):
     req = urllib.request.Request(url, headers=urlctx["headers"])
     try:
         response = urllib.request.urlopen(req)
-    except HTTPError:
+    except HTTPError as error:
         if debug:
-            print("HTTP error")
+            print(f"HTTP error: {error}")
         return ""
 
     if response.info().get('Content-Encoding') == 'gzip':
@@ -119,7 +119,7 @@ def get_build_info(urlctx, bnum):
                 try:
                     data = th.find_next_sibling().contents[val]
                     binfo[hdr] = data.text.strip()
-                except IndexError or AttributeError:
+                except (IndexError, AttributeError):
                     if debug:
                         print(f"Trouble getting {hdr}")
                     pass
@@ -134,7 +134,7 @@ def get_build_info(urlctx, bnum):
                         binfo[hdr] = data['data-timestamp']
                     else:
                         binfo[hdr] = data.text.strip()
-                except IndexError or AttributeError:
+                except (IndexError, AttributeError):
                     if debug:
                         print(f"Trouble getting {hdr}")
                     pass
