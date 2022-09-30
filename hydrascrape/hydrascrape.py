@@ -101,6 +101,7 @@ def get_build_info(urlctx, bnum):
         "Queued at",
         "Build started",
         "Build finished",
+        "Derivation store path",
         "Output store paths",
     ]
     text = get_page(urlctx, urlctx['buildurl'] + str(bnum))
@@ -162,14 +163,17 @@ def get_build_info(urlctx, bnum):
 
 def set_env(binfo):
     env = os.environ.copy()
+
     for key in binfo:
         if key == "Output store paths":
             env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key].removeprefix("/nix/store/").split('-', 1)[0]
-        else:
-            if key == "Inputs":
-                env["HYDRA_INPUTS"] = binfo[key].upper()
-            else:
-                env["HYDRA_" + key.upper().replace(' ', '_')] = binfo[key]
+        if key == "Derivation store path":
+            env["HYDRA_DERIVATION_STORE_HASH"] = binfo[key].removeprefix("/nix/store/").split('-', 1)[0]
+        if key == "Inputs":
+            env["HYDRA_INPUTS"] = binfo[key].upper()
+            continue
+        env["HYDRA_" + key.upper().replace(' ', '_')] = binfo[key]
+
     return env
 
 
