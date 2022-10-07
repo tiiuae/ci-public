@@ -1,0 +1,87 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1207.ve6191ff089f8">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2114.v2654ca_721309"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2114.v2654ca_721309">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2759.v87459c4eea_ca_">
+    <script>pipeline {                                                                                              
+    //agent {label &apos;NotInUse&apos;}                                                                          
+    agent {label &apos;tc-agent02&apos;}                                                                          
+    stages {                                                                                            
+        stage(&apos;clone&apos;) {                                                                                
+            steps {                                                                                     
+                catchError {                                                                            
+                    sh &apos;git clone https://github.com/tiiuae/spectrum-jenkins.git&apos;                       
+                }                                                                                       
+            }                                                                                           
+        }                                                                                               
+        stage(&apos;debug&apos;) {                                                                                
+            steps {                                                                                     
+                sh &apos;rm -rf hydra.*&apos;                                                                     
+                sh &apos;rm -rf list.txt&apos;                                                                    
+                sh &apos;rm -rf wlist.txt&apos;                                                                   
+            }                                                                                           
+        }                                                                                               
+      /*  stage(&apos;verifyStore&apos;) {                                                                        
+            steps {                                                                                     
+                build job: &apos;NixStoreChecker&apos;                                                            
+            }                                                                                           
+        }*/                                                                                             
+        stage(&apos;hydrascrape&apos;) {                                                                          
+            steps {                                                                                     
+                sh &apos;echo abc&apos;                                                                           
+                sh &apos;python3  spectrum-jenkins/hydrascrape/hydrascrape.py hydra.vedenemo.dev nuctest combined \&apos;echo $HYDRA_BUILD_ID:$HYDRA_OUTPUT_STORE_PATHS &gt;&gt; list.txt\&apos;&apos;                                                   
+            }                                                                                           
+        }                                                                                               
+        stage(&apos;copy&apos;) {                                                                                 
+            steps {                                                                                     
+                script {                                                                                
+                    def storepaths = readFile(file: &apos;list.txt&apos;)                                         
+                    storepaths.split(&apos;\n&apos;).each { String line -&gt;                                        
+                        println(&quot;hash: ${line}&quot;)      
+                        def data = line.split(&apos;:&apos;)
+                        println(&quot;BuildID: ${data[0]} File: ${data[1]}&quot;)
+                        try {                                                                           
+                            build job: &apos;NixCopyTest&apos;, parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;image&apos;, value: &quot; ${data[1]}&quot;], [$class: &apos;StringParameterValue&apos;, name: &apos;buildID&apos;, value: &quot; ${data[0]}&quot;]]
+                            sh &quot;echo ${line} &gt;&gt; wlist.txt&quot;
+                            sh &quot;echo ${line}&quot;
+                            sh &quot;cp ${data[1]} ../images/&quot;
+                            sh &apos;ls ../images/&apos;
+                        } catch (err) {                                                                 
+                            println(&quot;Hash: ${line} failed: ${err}&quot;)                                     
+                        }                                                                               
+                    }                                                                                   
+                }                                                                                       
+            }                                                                                           
+        }                                                                                               
+        stage(&apos;vulnix&apos;) {                                                                               
+            steps {                                                                                     
+                script {                                                                                
+                    def storepaths = readFile(file: &apos;wlist.txt&apos;)                                         
+                    storepaths.split(&apos;\n&apos;).each{ String line -&gt;                                         
+                    println (&quot;Vulnix for hash: ${line}&quot;)
+                    def data = line.split(&apos;:&apos;)
+                    println(&quot;BuildID: ${data[0]} File: ${data[1]}&quot;)
+                    catchError {                                                                        
+                        build job: &apos;vulnix&apos;, parameters: [[$class: &apos;StringParameterValue&apos;, name: &apos;image&apos;, value: &quot; ${data[1]}&quot;], [$class: &apos;StringParameterValue&apos;, name: &apos;buildID&apos;, value: &quot; ${data[0]}&quot;]]                                              
+                    }                                                                                   
+                    }                                                                                   
+                }                                                                                       
+            }                                                                                           
+        }                                                                             
+    }                                                                                                   
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
