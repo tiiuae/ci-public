@@ -12,6 +12,7 @@ import subprocess
 import os
 import re
 import filelock
+import json
 
 
 def convert_int(str, default = 0):
@@ -23,11 +24,15 @@ def convert_int(str, default = 0):
 
 
 debug = convert_int(os.getenv("DEBUG"))
+jsonen = False
+hid_proj = False
+dis_proj = False
+dis_jobset = False
 
 
 def help():
     print("")
-    print("Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action>")
+    print("Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]")
     print("")
     print("Tries to find builds to handle for specific projects and jobsets from a hydra server")
     print("Already handled builds will be read from handled builds file if it exists")
@@ -35,8 +40,14 @@ def help():
     print("action will be run with all the build information in the environment")
     print("")
     print("For example, check environment variables starting with \"HYDRA_\":")
-    print("python3 hydrascrape.py my.hydra.server myproject \"job.*\" myhydra_handled_builds.txt \"env | egrep ^HYDRA_\"")
+    print("python3 hydrascrape.py my.hydra.server myproject \"job.*\" myhydra_handled_builds.txt \"env | egrep ^HYDRA_\" -debug")
     print("")
+    print("Available options:")
+    print("  -debug  Enable debugging (You can also set DEBUG environment variable to 1)")
+    print("  -json   Enable JSON output, build info will be written in JSON format to <build ID>.json before running action")
+    print("  -dp     Include disabled projects in search")
+    print("  -hp     Include hidden projects in search")
+    print("  -dj     Include disabled jobsets in search")
     sys.exit(0)
 
 
@@ -134,6 +145,7 @@ def get_build_info(urlctx, bnum):
         "Status": 1,
         "System": 0,
         "Nix name": 0,
+        "Finished at": 0,
         "Nr": -1,
     }
     detailkeys = [
@@ -159,7 +171,10 @@ def get_build_info(urlctx, bnum):
 
                 try:
                     data = th.find_next_sibling().contents[val]
-                    binfo[hdr] = data.text.strip()
+                    if data.name == "time":
+                        binfo[hdr] = data['data-timestamp']
+                    else:
+                        binfo[hdr] = data.text.strip()
                 except (IndexError, AttributeError):
                     if debug:
                         print(f"Trouble getting {hdr}")
@@ -180,23 +195,24 @@ def get_build_info(urlctx, bnum):
                         print(f"Trouble getting {hdr}")
                     pass
 
-    inputs = ""
+    inputs = []
     for div in soup.find_all("div",{"id": "tabs-buildinputs"}):
         for tbody in div.find_all("tbody"):
             for tr in tbody.find_all("tr"):
                 tds = tr.find_all("td")
                 try:
                     input = tds[0].text.strip()
-                    inputs += " " + input
                     source = tds[2].text.strip()
                     hash = tds[3].text.strip()
-                    binfo[input + " hash"] = hash
-                    binfo[input + " source"] = source
+                    inputs.append({"Name": input,
+                               "Hash": hash,
+                               "Source": source})
                 except IndexError:
                     if debug:
                         print("Trouble getting build inputs")
                     pass
-    binfo['Inputs'] = inputs.strip()
+    binfo['Inputs'] = inputs
+    binfo['Output store paths'] = binfo['Output store paths'].split(',')
 
     return binfo
 
@@ -206,15 +222,39 @@ def set_env(binfo):
 
     for key in binfo:
         if key == "Output store paths":
-            env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key].removeprefix("/nix/store/").split('-', 1)[0]
+            env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key][0].removeprefix("/nix/store/").split('-', 1)[0]
+            env["HYDRA_OUTPUT_STORE_PATHS"] = ','.join(binfo[key])
+            continue
         if key == "Derivation store path":
             env["HYDRA_DERIVATION_STORE_HASH"] = binfo[key].removeprefix("/nix/store/").split('-', 1)[0]
         if key == "Inputs":
-            env["HYDRA_INPUTS"] = binfo[key].upper()
+            env["HYDRA_INPUTS"] = ""
+            for i in binfo[key]:
+                env["HYDRA_INPUTS"] += f"{i['Name'].upper()} "
+                env[f"HYDRA_{i['Name'].upper()}_HASH"] = i['Hash']
+                env[f"HYDRA_{i['Name'].upper()}_SOURCE"] = i['Source']
+            env["HYDRA_INPUTS"] = env["HYDRA_INPUTS"].strip()
             continue
         env["HYDRA_" + key.upper().replace(' ', '_')] = binfo[key]
 
     return env
+
+
+def save_json(binfo):
+    if jsonen:
+        filename = f"{binfo['Build ID']}.json"
+        if debug:
+            print(f"Writing json info into {filename}")
+
+        json_obj = json.dumps(binfo, indent=2)
+
+        try:
+            with open(filename, "w") as outf:
+                outf.write(json_obj)
+        except PermissionError as pe:
+            print(f"Could not write {pe.filename}: {pe.strerror}", file = sys.stderr)
+            sys.exit(1)
+
 
 
 def get_projects(urlctx, hidden=False, disabled=False):
@@ -322,6 +362,7 @@ def handle_jobset(context, project, jobset, handled):
                 binfo['Jobset'] = jobset
                 del binfo['Status']
                 env = set_env(binfo)
+                save_json(binfo)
                 if debug:
                     print(f"Handling {i} " + "-" * 60)
                 sp = subprocess.run(context['action'], shell=True, env=env)
@@ -368,14 +409,14 @@ def main_locked(argv):
 
     handled = get_handled(filename)
 
-    projects = get_projects(context)
+    projects = get_projects(context, hidden=hid_proj, disabled=dis_proj)
     projects = list(filter(r[0].match, projects))
     if debug:
         print("Selected projects: ", projects)
 
     jobsets = {}
     for p in projects:
-        jobsets[p] = get_jobsets(context, p)
+        jobsets[p] = get_jobsets(context, p, disabled=dis_jobset)
 
     for p in projects:
         jobsets[p] = list(filter(r[1].match, jobsets[p]))
@@ -391,9 +432,59 @@ def main_locked(argv):
     update_handled(filename, handled)
 
 
+def json_e():
+    global jsonen
+    jsonen = True
+    if debug:
+        print("JSON enabled")
+
+
+def debug_e():
+    global debug
+    debug = 1
+    print("Debug enabled")
+
+
+def hp_e():
+    global hid_proj
+    hid_proj = True
+    if debug:
+        print("Including hidden projects")
+
+
+def dp_e():
+    global dis_proj
+    dis_proj = True
+    if debug:
+        print("Including disabled projects")
+
+
+def dj_e():
+    global dis_jobset
+    dis_jobset = True
+    if debug:
+        print("Including disabled jobsets")
+
+
 def main(argv):
+    argfu = {"-json": json_e,
+             "-debug": debug_e,
+             "-hp": hp_e,
+             "-dp": dp_e,
+             "-dj": dj_e,
+    }
+
     if len(argv) < 5:
         help()
+
+    if len(argv) > 5:
+        for i in range(5, len(argv)):
+            f = argfu.get(argv[i], None)
+            if f != None:
+                f()
+            else:
+                print(f"Invalid argument: {argv[i]}", file=sys.stderr)
+                sys.exit(1)
 
     lock = filelock.FileLock(f"{argv[3]}.lock")
     try:
