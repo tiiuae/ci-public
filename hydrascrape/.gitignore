@@ -1,2 +1,3 @@
 *_handled_builds.txt
-
+*.lock
+*.json
