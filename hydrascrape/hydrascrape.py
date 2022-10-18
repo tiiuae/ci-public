@@ -3,7 +3,6 @@
 # SPDX-FileCopyrightText: 2022 Tero Tervala <tero.tervala@unikie.com>
 # SPDX-FileCopyrightText: 2022 Unikie
 
-from urllib.error import HTTPError
 import bs4
 import sys
 import urllib.request
@@ -13,6 +12,14 @@ import os
 import re
 import filelock
 import json
+from urllib.error import HTTPError
+
+debug = False
+jsonen = False
+hid_proj = False
+dis_proj = False
+hid_jobset = False
+dis_jobset = False
 
 
 def convert_int(str, default = 0):
@@ -21,13 +28,6 @@ def convert_int(str, default = 0):
     except (ValueError, TypeError):
         i = default
     return i
-
-
-debug = convert_int(os.getenv("DEBUG"))
-jsonen = False
-hid_proj = False
-dis_proj = False
-dis_jobset = False
 
 
 def help():
@@ -48,6 +48,7 @@ def help():
     print("  -dp     Include disabled projects in search")
     print("  -hp     Include hidden projects in search")
     print("  -dj     Include disabled jobsets in search")
+    print("  -hj     Include hidden jobsets in search")
     sys.exit(0)
 
 
@@ -256,7 +257,6 @@ def save_json(binfo):
             sys.exit(1)
 
 
-
 def get_projects(urlctx, hidden=False, disabled=False):
     text = get_page(urlctx, urlctx['hydraurl'])
     soup = bs4.BeautifulSoup(text, features="html.parser")
@@ -293,21 +293,31 @@ def get_projects(urlctx, hidden=False, disabled=False):
     return plist
 
 
-def get_jobsets(urlctx, project, disabled=False):
+def get_jobsets(urlctx, project, hidden=False, disabled=False):
     hydra = urlctx['hydraurl']
     text = get_page(urlctx, f"{hydra}project/{project}")
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     jobsets = soup.find_all("tr", {"class": "jobset"})
+    hiddens = soup.find_all("span", {"class": "hidden-jobset"})
     disableds = soup.find_all("span", {"class": "disabled-jobset"})
 
     jlist = []
     for j in jobsets:
         jlist.append(j.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
+    hlist = []
+    for h in hiddens:
+        hlist.append(d.find("a", {"class": "row-link"})["href"].split("/")[-1])
+
     dlist = []
     for d in disableds:
         dlist.append(d.find("a", {"class": "row-link"})["href"].split("/")[-1])
+
+    if hidden == False:
+        for h in hlist:
+            if h in jlist:
+                jlist.remove(h)
 
     if disabled == False:
         for d in dlist:
@@ -416,7 +426,7 @@ def main_locked(argv):
 
     jobsets = {}
     for p in projects:
-        jobsets[p] = get_jobsets(context, p, disabled=dis_jobset)
+        jobsets[p] = get_jobsets(context, p, hidden=hid_jobset, disabled=dis_jobset)
 
     for p in projects:
         jobsets[p] = list(filter(r[1].match, jobsets[p]))
@@ -459,6 +469,13 @@ def dp_e():
         print("Including disabled projects")
 
 
+def hj_e():
+    global hid_jobset
+    hid_jobset = True
+    if debug:
+        print("Including hidden jobsets")
+
+
 def dj_e():
     global dis_jobset
     dis_jobset = True
@@ -467,10 +484,14 @@ def dj_e():
 
 
 def main(argv):
+    global debug
+    debug = convert_int(os.getenv("DEBUG"))
+
     argfu = {"-json": json_e,
              "-debug": debug_e,
              "-hp": hp_e,
              "-dp": dp_e,
+             "-hj": hj_e,
              "-dj": dj_e,
     }
 
