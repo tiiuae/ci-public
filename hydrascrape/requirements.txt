@@ -1,0 +1,5 @@
+-i https://pypi.org/simple
+beautifulsoup4==4.11.1
+bs4==0.0.1
+filelock==3.8.0
+soupsieve==2.3.2.post1
