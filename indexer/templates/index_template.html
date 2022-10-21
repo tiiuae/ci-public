@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<HTML lang="en">
+<HEAD>
+<META charset="UTF-8">
+<TITLE>{{ title }}</TITLE>
+<LINK rel="stylesheet" href="/base.css">
+</HEAD>
+<BODY>
+<P><A href="javascript:history.back()">Back</A></P>
+<TABLE>
+{% for key, value in result.items() %}
+    <TR>
+        <TH align="right">{{ key }}:</TH>
+        {% if value is sequence and value is not mapping and value is not string %}
+            <TD>
+            {% if key == "Inputs" %}
+                <TABLE>
+                {% for subval in value %}
+                    <TR>
+                    {% for subsub in subval %}
+                        <TD>{{ subsub }}</TD>
+                    {% endfor %}
+                    </TR>
+                {% endfor %}
+                </TABLE>
+            {% else %}
+                {% for subval in value %}
+                    {{ subval }}<BR>
+                {% endfor %}
+            {% endif %}
+            </TD>
+        {% else %}
+        <TD>{{ value }}</TD>
+        {% endif %}
+    </TR>
+{% endfor %}
+</TABLE>
+</BODY>
+</HTML>
