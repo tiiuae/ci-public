@@ -1,0 +1,86 @@
+#!groovy
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2022 Ville-Pekka Juntunen <ville-pekka.juntunen@unikie.com>
+// SPDX-FileCopyrightText: 2022 Unikie
+
+resultsPath = '/home/tc-agent02/Jenkins-agent/workspace/results'
+imagesPath = '/home/tc-agent02/Jenkins-agent/workspace/images/'
+processingJob = 'Spectrum_OS/post_processing_nuc'
+
+pipeline {
+    //agent {label 'NotInUse'}
+    agent {label 'tc-agent02'}
+    stages {
+        stage('Remove old working list') {
+            steps {
+                script {
+                    try {
+                        // revome old worklist if exist
+                        sh 'rm -rf wlist.txt'
+                    }  catch(err) {
+                        println("Old worklist do not exist")
+                    }
+                }
+            }
+        }
+        stage('clone spectrum-jenkins') {
+            steps {
+                script {
+                    try {
+                        sh 'git clone https://github.com/tiiuae/spectrum-jenkins.git'
+                    }  catch(err) {
+                        println("Repo is already cloned")
+                    }
+                }
+            }
+        }
+        stage('Pull repository') {
+            steps {
+              dir('spectrum-jenkins/'){
+                sh 'git pull'
+               }
+            }
+        }
+        stage('hydrascrape') {
+            environment {
+                PATH="$PATH:/nix/var/nix/profiles/default/bin/"
+            }
+            steps {
+                script {
+                    sh "python3 spectrum-jenkins/hydrascrape/hydrascrape.py hydra.vedenemo.dev ${params.project} ${params.jobset} handled_test "+ '\'./spectrum-jenkins/hydracopy/hydra_copy.sh\' -json -debug'
+                }
+            }
+        }
+        stage('Post Processing') {
+            steps {
+                script {
+                    if (!fileExists('wlist.txt')) {
+                        println("Nothing new to process!")
+                        return
+                    }
+                    def storepaths = readFile(file: 'wlist.txt')
+                    storepaths.split('\n').each{ String line ->
+                        def data = line.split(':')
+                        println("BuildID: ${data[0]} File: ${data[1]}")
+
+                        //copy image to images folder
+                        //sh "cp ${data[1]} ${imagesPath}"
+
+                        // Make directory and copy buildID.json there
+                        sh "mkdir ${resultsPath}/${data[0]}"
+                        sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
+
+                        //Trigger post processing pipeline
+                        try {
+                            build job: "${processingJob}", parameters: [[$class: 'StringParameterValue', name: 'image', value: "${data[1]}"], [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"], [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"]]
+                        }catch (err) {
+                            println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+}
