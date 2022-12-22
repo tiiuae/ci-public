@@ -87,7 +87,7 @@ pipeline {
         stage('Create index.html and bublish reports') {
             steps {
                dir("${params.resultsPath}/"){
-                  sh "python3 ~/Jenkins-agent/workspace/Spectrum_OS/post_processing_TEST/spectrum-jenkins/indexer/indexer.py ${params.buildID}"
+                  sh "python3 ~/Jenkins-agent/workspace/Spectrum_OS/post_processing_nuc/spectrum-jenkins/indexer/indexer.py ${params.buildID}"
                   sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload"
                   sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index ./${params.buildID}"
                }
@@ -95,3 +95,4 @@ pipeline {
         }
     }
 }
+
