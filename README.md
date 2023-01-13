@@ -1,2 +1,2 @@
-# spectrum-jenkins
-Jenkins files for SpectrumOS
+# ci-public
+CI/CD related files
