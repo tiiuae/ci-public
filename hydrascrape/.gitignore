@@ -1,3 +1,4 @@
-*_handled_builds.txt
+*handled*
 *.lock
+!/Pipfile.lock
 *.json
