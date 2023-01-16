@@ -1,8 +1,8 @@
 #!/usr/bin/env pipenv-shebang
 # ------------------------------------------------------------------------
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2022 Tero Tervala <tero.tervala@unikie.com>
-# SPDX-FileCopyrightText: 2022 Unikie
+# SPDX-FileCopyrightText: 2022-2023 Tero Tervala <tero.tervala@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
 # ------------------------------------------------------------------------
 # Script for extracting build information from a hydra server to
 # facilitate further processing in e.g. Jenkins environment.
@@ -256,6 +256,7 @@ def get_build_info(context, bnum):
                     pass
     binfo['Inputs'] = inputs
     binfo['Output store paths'] = binfo['Output store paths'].split(',')
+    binfo['Job'] = soup.find("div", {"class": "page-header"}).text.split(':')[-1].strip()
 
     return binfo
 
