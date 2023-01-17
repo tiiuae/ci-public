@@ -1,7 +1,7 @@
 #!/usr/bin/env pipenv-shebang
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2022 Tero Tervala <tero.tervala@unikie.com>
-# SPDX-FileCopyrightText: 2022 Unikie
+# SPDX-FileCopyrightText: 2022-2023 Tero Tervala <tero.tervala@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
 
 import jinja2
 import markupsafe
@@ -11,17 +11,26 @@ import datetime
 import os
 import glob
 
+filesdir = "/files"
+webifydir = "/webify"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
-outputprefix = "/files/nix/store/"
+imageprefix = ""
+webifyprefix = ""
 debug = 0
 
-def help():
-    print("Usage: indexer.py <build dir>")
-    print("")
-    print("  makes an index file with all the build information in the <build dir>")
-    print("  Last part (basename) of the <build dir> needs to be the Build ID of the build being handled")
-    print("")
+def help(argv):
+    print(f"Usage: {argv[0]} IMGPFIX RPTPFIX BUILDDIR")
+    print(f"")
+    print(f"   IMGPFIX = Additional prefix between images dir and {filesdir}")
+    print(f"   RPTPFIX = Additional prefix between build reports dir and {filesdir}")
+    print(f"  BUILDDIR = build directory")
+    print(f"")
+    print(f"makes an index file with all the build information in the build dir")
+    print(f"Last part (basename) of the build dir needs to be the Build ID of the build being handled")
+    print(f"")
+    print(f"Example: {argv[0]} images/hydra/nuc build_reports/hydra ./1234")
+    print(f"")
 
 
 # ------------------------------------------------------------------------
@@ -57,6 +66,11 @@ def jobset(js, binfo):
 
 
 # ------------------------------------------------------------------------
+def job(job, binfo):
+    return f'<A href="https://{binfo["Server"]}/job/{binfo["Project"]}/{binfo["Jobset"]}/{job}">{job}</A>'
+
+
+# ------------------------------------------------------------------------
 def build_id(bid, binfo):
     return f'<A href="https://{binfo["Server"]}/build/{bid}">{bid}</A>'
 
@@ -81,7 +95,7 @@ def outputs(out, _):
     ol = []
     for o in out:
         o = o.removeprefix("/nix/store/")
-        ol.append(f'<A href="{outputprefix}{o}">{o}</A>')
+        ol.append(f'<A href="{imageprefix}/{o}">{o}</A>')
     return ol
 
 
@@ -106,6 +120,7 @@ handlers =  {
     'Server': server,
     'Project': project,
     'Jobset': jobset,
+    'Job': job,
     'Build ID': build_id,
     'System': default,
     'Nix name': default,
@@ -113,6 +128,7 @@ handlers =  {
     'Queued at': time_stamp,
     'Build started': time_stamp,
     'Build finished': time_stamp,
+    'Post processing done at': time_stamp,
     'Derivation store path': derivation,
     'Output store paths': outputs,
     'Inputs': inputs,
@@ -121,17 +137,26 @@ handlers =  {
 # ------------------------------------------------------------------------
 # Main program
 # ------------------------------------------------------------------------
-def main(argv):
+def main(argv: list[str]):
     global debug
+    global imageprefix
+    global webifyprefix
 
     # Set debug if set in environment
     debug = convert_int(os.getenv("INDEXER_DEBUG"))
 
-    if len(argv) != 1:
-        help()
+    if len(argv) != 4:
+        help(argv)
         return
 
-    dir = os.path.normpath(argv[0])
+    imageprefix = filesdir + "/" + argv[1].removeprefix("/").removesuffix("/")
+    webifyprefix = webifydir + "/" + argv[2].removeprefix("/").removesuffix("/")
+
+    if debug:
+        print(f"imageprefix = {imageprefix}")
+        print(f"webifyprefix = {webifyprefix}")
+
+    dir = os.path.normpath(argv[3])
     # Path should end in directory which has build ID as it's name
     bnum = convert_int(os.path.basename(dir), -1)
 
@@ -198,7 +223,7 @@ def main(argv):
     vl = []
     for vr in vulreps:
         htn = vr.removesuffix(".txt") + ".html"
-        vl.append(f'<A href="/webify/{bnum}/{htn}">{vr}</A>')
+        vl.append(f'<A href="{webifyprefix}/{bnum}/{htn}">{vr}</A>')
 
     result['Vulnix report'] = vl
 
@@ -237,4 +262,4 @@ def main(argv):
 # Run main when executed from command line
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(sys.argv)
