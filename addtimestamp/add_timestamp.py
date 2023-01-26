@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2022 Ville-Pekka Juntunen <ville-pekka.juntunen@unikie.com>
-# SPDX-FileCopyrightText: 2022 Unikie
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2022-2023 Ville-Pekka Juntunen <ville-pekka.juntunen@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
 # ------------------------------------------------------------------------
 # Script for adding "Post processing done" unix timestamp to <buildID>.json.
 # ------------------------------------------------------------------------

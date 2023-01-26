@@ -1,8 +1,8 @@
 #!/usr/bin/env pipenv-shebang
 # ------------------------------------------------------------------------
-# SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2022 Tero Tervala <tero.tervala@unikie.com>
-# SPDX-FileCopyrightText: 2022 Unikie
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2022-2023 Tero Tervala <tero.tervala@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
 # ------------------------------------------------------------------------
 # Script for adding a projects and a jobsets into Hydra
 
