@@ -1,6 +1,6 @@
 #!/usr/bin/env pipenv-shebang
 # ------------------------------------------------------------------------
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2022-2023 Tero Tervala <tero.tervala@unikie.com>
 # SPDX-FileCopyrightText: 2022-2023 Unikie
 # ------------------------------------------------------------------------
