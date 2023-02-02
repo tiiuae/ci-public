@@ -1,0 +1,20 @@
+
+ Binarycache container
+ ---------------------
+
+Custom configuration can be done in confs/bcache.local
+See confs/bcache.default for the values that can be adjusted.
+
+To create binarycache container:
+./build_bcache.sh
+
+To run container:
+./buid_bcache.sh [cache directory]
+
+First run (cache-directory not existing) initializes the system.
+
+ ----
+
+For upload to binarycache to work, one needs to place public key
+for a connection from hydra to the cache directory as
+{CACHE}/home/.ssh/authorized_keys

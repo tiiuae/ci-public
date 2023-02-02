@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2022-2023 Marko Lindqvist <marko.lindqvist@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
+
+# Hydra Container configuration, defaults & applying overrides
+
+HC_PORT=3001
+HC_BASE_LABEL="hydra"
+
+#HC_CHANNEL="22.05"
+
+if [ -f confs/hydra.local ] ; then
+  # Possible overrides
+  . confs/hydra.local
+fi

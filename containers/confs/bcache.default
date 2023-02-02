@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2022-2023 Marko Lindqvist <marko.lindqvist@unikie.com>
+# SPDX-FileCopyrightText: 2022-2023 Unikie
+
+# Binarycache Container configuration, defaults & applying overrides
+
+BCC_BASE_LABEL="bcache"
+BCC_SSH_PORT=4001
+
+if [ -f confs/bcache.local ] ; then
+  # Possible overrides
+  . confs/bcache.local
+fi
