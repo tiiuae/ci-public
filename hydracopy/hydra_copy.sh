@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2022-2023 Ville-Pekka Juntunen <ville-pekka.juntunen@unikie.com>
 # SPDX-FileCopyrightText: 2022-2023 Unikie
+# SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 # ------------------------------------------------------------------------
 # This script is used as "action" of hydrascraper.py and it will copy given Hydra build nix store from http://binarycache.vedenemo.dev
 # And it add Hydra build ID to working list if copy succeeded
