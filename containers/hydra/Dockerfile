@@ -18,10 +18,12 @@ RUN /setup/channel.sh "$CHANNEL"
 
 ARG HYDRA_UID
 ARG HYDRA_GID
+ARG HYDRA_REMOTE_BUILDERS
 
 RUN nix-env -i hydra -i postgresql
 
-RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && /setup/nix_conf.sh
+RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
+    /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS"
 
 RUN mkdir -p /run/postgresql && chmod go+w /run/postgresql
 COPY launch.sh run.sh /launch/
