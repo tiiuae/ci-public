@@ -34,5 +34,11 @@ else
   exit 1
 fi
 
+if [ "$HC_REMOTE_BUILDERS" != "yes" ] && [ "$HC_REMOTE_BUILDERS" != "no" ] ; then
+  echo "Unknown HC_REMOTE_BUILDERS configuration value \"$HC_REMOTE_BUILDERS\"!" >&2
+  exit 1
+fi
+
 docker build --build-arg HYDRA_UID="$HYDRA_UID" --build-arg HYDRA_GID="$HYDRA_GID" \
-       -t "$HC_BASE_LABEL" hydra $CONTAINER_DEBUG -f hydra/Dockerfile
+             --build-arg HYDRA_REMOTE_BUILDERS="$HC_REMOTE_BUILDERS" \
+             -t "$HC_BASE_LABEL" hydra $CONTAINER_DEBUG -f hydra/Dockerfile

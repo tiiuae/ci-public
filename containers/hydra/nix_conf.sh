@@ -24,7 +24,13 @@ cp /etc/nix/nix.conf nix.conf
 
 nix_conf_line "cores" "4"
 nix_conf_line "max-jobs" "16"
-nix_conf_line "builders" ""
+
+if [ "$1" = "no" ] ; then
+  nix_conf_line "builders" ""
+else
+  ln -s /home/hydra/machines /etc/nix/
+fi
+
 nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/"
 nix_conf_line "post-build-hook" "/setup/upload.sh"
 nix_conf_line "system-features" "nixos-test benchmark big-parallel kvm"
