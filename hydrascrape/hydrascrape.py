@@ -175,6 +175,29 @@ def update_handled(filename, handled):
         print(f"Cannot update {filename}: {pe.strerror}", file = sys.stderr)
         sys.exit(1)
 
+
+# ------------------------------------------------------------------------
+# Get info provided by the Hydra postbuild script
+# ------------------------------------------------------------------------
+def get_postbuild_info(context: dict, hash: str, binfo: dict):
+    # Get run command log by hash
+    text = get_page(context, f"{context['hydra_url']}runcommandlog/{hash}")
+    # Convert bytes to string
+    text = text.decode("utf-8")
+    # Create regex pattern that matches simple variable="value" assignments
+    pat = re.compile('^.*=".*"$')
+
+    # Handle line by line
+    for line in text.split('\n'):
+        # Throw away extra spaces
+        line = line.strip()
+        # If pattern matches store the value in binfo
+        if pat.match(line):
+            varname = line.split("=")[0]
+            value = line.split('"')[1]
+            binfo[varname] = value
+
+
 # ------------------------------------------------------------------------
 # Constant data used by following get_build_info function
 # ------------------------------------------------------------------------
@@ -258,6 +281,19 @@ def get_build_info(context, bnum):
     binfo['Inputs'] = inputs
     binfo['Output store paths'] = binfo['Output store paths'].split(',')
     binfo['Job'] = soup.find("div", {"class": "page-header"}).text.split(':')[-1].strip()
+
+    # Find run command log hash entries for build
+    loghash = None
+    for a in soup.find_all("a", {"class": "btn btn-secondary btn-sm"}):
+        l = a.get('href')
+        if l != None and l.find("/runcommandlog/") != -1 and l.endswith("/raw"):
+            loghash = l.split("/")[-2]
+            # First one should be latest, no need to dig deeper
+            break
+
+    # If found, then process log for post build data
+    if loghash != None:
+        get_postbuild_info(context, loghash, binfo)
 
     return binfo
 
