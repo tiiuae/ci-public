@@ -193,7 +193,7 @@ def get_postbuild_info(context: dict, hash: str, binfo: dict):
         line = line.strip()
         # If pattern matches store the value in binfo
         if pat.match(line):
-            varname = line.split("=")[0]
+            varname = line.split("=")[0].lower().capitalize().replace('_',' ')
             value = line.split('"')[1]
             binfo[varname] = value
 
@@ -206,15 +206,20 @@ summarykeys = {
     "Status": 1,
     "System": 0,
     "Nix name": 0,
-    "Finished at": 0,
     "Nr": -1,
 }
 detailkeys = [
     "Queued at",
     "Build started",
     "Build finished",
+    "Short description",
+    "License",
+    "Homepage",
+    "Maintainers",
     "Derivation store path",
     "Output store paths",
+    "Closure size",
+    "Output size",
 ]
 # ------------------------------------------------------------------------
 # Fetches information for given build number
@@ -249,14 +254,17 @@ def get_build_info(context, bnum):
 
     for div in soup.find_all("div",{"id": "tabs-details"}):
         for th in div.find_all("th"):
-            hdr = th.text.strip().rstrip(':')
+            hdr = th.text.strip().rstrip(':').replace('(','').replace(')','')
             if hdr in detailkeys:
                 try:
                     data = th.find_next_sibling().contents[0]
                     if data.name == "time":
                         binfo[hdr] = data['data-timestamp']
                     else:
-                        binfo[hdr] = data.text.strip()
+                        val = data.text.split('\n')[0].strip()
+                        if val != "not given":
+                            binfo[hdr] = val
+
                 except (IndexError, AttributeError):
                     if debug:
                         print(f"Trouble getting {hdr}")
@@ -278,8 +286,9 @@ def get_build_info(context, bnum):
                     if debug:
                         print("Trouble getting build inputs")
                     pass
-    binfo['Inputs'] = inputs
-    binfo['Output store paths'] = binfo['Output store paths'].split(',')
+    if len(inputs) > 0:
+        binfo['Inputs'] = inputs
+    binfo['Output store paths'] = binfo['Output store paths'].split(' ')
     binfo['Job'] = soup.find("div", {"class": "page-header"}).text.split(':')[-1].strip()
 
     # Find run command log hash entries for build
@@ -310,7 +319,7 @@ def set_env(binfo):
         if key == "Output store paths":
             # Set the plain hash of the first output separately
             env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key][0].removeprefix("/nix/store/").split('-', 1)[0]
-            env["HYDRA_OUTPUT_STORE_PATHS"] = ','.join(binfo[key])
+            env["HYDRA_OUTPUT_STORE_PATHS"] = ' '.join(binfo[key])
             continue
         if key == "Derivation store path":
             # Set the plain hash of the derivation separately
