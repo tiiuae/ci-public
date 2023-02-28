@@ -92,18 +92,14 @@ def time_stamp(tim, _):
 
 
 # ------------------------------------------------------------------------
-def outputs(out, _):
-    ol = []
-    for o in out:
-        o = o.removeprefix("/nix/store/")
-        ol.append(f'<A href="{imageprefix}/{o}">{o}</A>')
-    return ol
+def postbuild_link(out, _):
+    o = out.removeprefix("/nix/store/")
+    return f'<A href="{imageprefix}/{o}">{out}</A>'
 
 
 # ------------------------------------------------------------------------
-def derivation(drv, _):
-    drv = drv.removeprefix("/nix/store/")
-    return drv
+def homepage(hp, _):
+    return f'<A href="{hp}">{hp}</A>'
 
 
 # ------------------------------------------------------------------------
@@ -123,16 +119,23 @@ handlers =  {
     'Jobset': jobset,
     'Job': job,
     'Build ID': build_id,
+    'Homepage': homepage,
+    'Short description': default,
+    'License': default,
+    'Maintainers': default,
     'System': default,
     'Nix name': default,
-    'Finished at': time_stamp,
     'Queued at': time_stamp,
     'Build started': time_stamp,
     'Build finished': time_stamp,
     'Post processing done at': time_stamp,
-    'Derivation store path': derivation,
-    'Output store paths': outputs,
+    'Derivation store path': default,
+    'Output store paths': default,
     'Inputs': inputs,
+    'Closure size': default,
+    'Output size': default,
+    'Postbuild info': default,
+    'Postbuild link': postbuild_link,
 }
 
 # ------------------------------------------------------------------------
@@ -256,7 +259,7 @@ def main(argv: list[str]):
 
     # Render index.html
     with open("index.html","w") as file:
-            print(template.render(title=f"Build {binfo['Build ID']} Results", result=result), file=file)
+            print(template.render(title=f"{binfo['Server']} Build {binfo['Build ID']} Results", result=result), file=file)
 
 
 # ------------------------------------------------------------------------
