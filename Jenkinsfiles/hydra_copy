@@ -6,7 +6,7 @@
 
 resultsPath = '/home/tc-agent02/Jenkins-agent/workspace/results'
 imagesPath = '/home/tc-agent02/Jenkins-agent/workspace/images/'
-processingJob = 'Spectrum_OS/post_processing_nuc'
+processingJob = 'nixOS/post_processing_nuc'
 
 pipeline {
     //agent {label 'NotInUse'}
@@ -24,11 +24,11 @@ pipeline {
                 }
             }
         }
-        stage('clone spectrum-jenkins') {
+        stage('clone ci-public') {
             steps {
                 script {
                     try {
-                        sh 'git clone https://github.com/tiiuae/spectrum-jenkins.git'
+                        sh 'git clone https://github.com/tiiuae/ci-public.git'
                     }  catch(err) {
                         println("Repo is already cloned")
                     }
@@ -37,7 +37,7 @@ pipeline {
         }
         stage('Pull repository') {
             steps {
-              dir('spectrum-jenkins/'){
+              dir('ci-public/'){
                 sh 'git pull'
                }
             }
@@ -48,7 +48,7 @@ pipeline {
             }
             steps {
                 script {
-                    sh "python3 spectrum-jenkins/hydrascrape/hydrascrape.py hydra.vedenemo.dev ${params.project} ${params.jobset} handled_test "+ '\'./spectrum-jenkins/hydracopy/hydra_copy.sh\' -json -debug'
+                    sh "python3 ci-public/hydrascrape/hydrascrape.py hydra.vedenemo.dev ${params.project} ${params.jobset} handled_builds "+ '\'python3 ci-public/hydrascrape/action.py\''
                 }
             }
         }
@@ -62,20 +62,25 @@ pipeline {
                     def storepaths = readFile(file: 'wlist.txt')
                     storepaths.split('\n').each{ String line ->
                         def data = line.split(':')
-                        println("BuildID: ${data[0]} File: ${data[1]}")
 
-                        //copy image to images folder
-                        //sh "cp ${data[1]} ${imagesPath}"
+
+                        // Get postBuild Data from .json
+                        def buildData = readJSON file: "${data[0]}.json"
+                        println("BuildID: ${data[0]} Store path: ${buildData['Output store paths'][0]}")
 
                         // Make directory and copy buildID.json there
                         sh "mkdir ${resultsPath}/${data[0]}"
                         sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
 
-                        //Trigger post processing pipeline
-                        try {
-                            build job: "${processingJob}", parameters: [[$class: 'StringParameterValue', name: 'image', value: "${data[1]}"], [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"], [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"]]
-                        }catch (err) {
-                            println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                        if ("${buildData['Job']}".contains("nuc")) {
+                            //Trigger post processing pipeline
+                            try {
+                                build job: "${processingJob}", parameters: [[$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"], [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"], [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"]]
+                            }catch (err) {
+                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            }
+                        } else {
+                            println("Build was not from wanted job")
                         }
                     }
                 }

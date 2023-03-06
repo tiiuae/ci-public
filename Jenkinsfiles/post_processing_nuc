@@ -6,20 +6,20 @@
 
 buildResults = [:]
 
-vulnixJob = 'Spectrum_OS/Supply_chain_security/vulnix'
-nucJob = 'Spectrum_OS/Testing/NUC_x86/nuc_x86_test_set'
+vulnixJob = 'nixOS/Supply_chain_security/vulnix'
+nucJob = 'nixOS/Testing/NUC_x86/nuc_x86_test_set'
 
 pipeline {
     //agent {label 'NotInUse'}
     agent {label 'tc-agent02'}
     stages {
-        stage('clone spectrum-jenkins') {
+        stage('clone ci-public') {
             steps {
                 script {
                     // Set pipeline description
                     currentBuild.description = "Hydra BuildID: ${params.buildID}"
                     try {
-                        sh 'git clone https://github.com/tiiuae/spectrum-jenkins.git'
+                        sh 'git clone https://github.com/tiiuae/ci-public.git'
                     }  catch(err) {
                         println("Repo is already cloned")
                     }
@@ -28,7 +28,7 @@ pipeline {
         }
         stage('Pull repository') {
             steps {
-              dir('spectrum-jenkins/'){
+              dir('ci-public/'){
                 sh 'git pull'
                }
             }
@@ -55,7 +55,6 @@ pipeline {
                 }
             }
         }
-
         stage('Nuc Tests') {
             steps {
                 script {
@@ -80,7 +79,7 @@ pipeline {
         }
         stage('Add post processing timestamp to .json file and create index.html') {
             steps {
-              dir("spectrum-jenkins/") {
+              dir("ci-public/") {
                   sh "python3 addtimestamp/add_timestamp.py ${params.resultsPath}/${params.buildID} ${params.buildID}.json"
               }
             }
@@ -88,12 +87,11 @@ pipeline {
         stage('Create index.html and bublish reports') {
             steps {
                dir("${params.resultsPath}/"){
-                  sh "python3 ~/Jenkins-agent/workspace/Spectrum_OS/post_processing_nuc/spectrum-jenkins/indexer/indexer.py ${params.buildID}"
-                  sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload"
-                  sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index ./${params.buildID}"
+                  sh "python3 ~/Jenkins-agent/workspace/nixOS/post_processing_nuc/ci-public/indexer/indexer.py images/hydra/nuc build_reports/hydra  ${params.buildID}"
+                  sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload/build_reports/hydra/${params.buildID}"
+                  sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index build_reports/hydra/${params.buildID}"
                }
             }
         }
     }
 }
-
