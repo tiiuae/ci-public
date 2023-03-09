@@ -10,8 +10,9 @@ FROM nixos/nix
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
      populate.sh packages.lst upload.sh /setup/
+COPY postbuild.py hydra_conf.sh /setup/
 
-RUN chmod +x /setup/*.sh
+RUN chmod +x /setup/*.sh /setup/*.py
 
 ARG CHANNEL
 RUN /setup/channel.sh "$CHANNEL"
@@ -19,11 +20,13 @@ RUN /setup/channel.sh "$CHANNEL"
 ARG HYDRA_UID
 ARG HYDRA_GID
 ARG HYDRA_REMOTE_BUILDERS
+ARG PB_SRV
 
 RUN nix-env -i hydra -i postgresql
 
 RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
-    /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS"
+    /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
+    /setup/hydra_conf.sh "$PB_SRV"
 
 RUN mkdir -p /run/postgresql && chmod go+w /run/postgresql
 COPY launch.sh run.sh /launch/

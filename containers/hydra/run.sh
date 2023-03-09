@@ -13,6 +13,7 @@ pg_ctl start -D /home/hydra/db
 # https://github.com/NixOS/hydra/issues/1186
 export LOGNAME="hydra"
 export HYDRA_DATA="/home/hydra/db"
+export HYDRA_CONFIG="/setup/hydra.conf"
 hydra-server &
 GC_DONT_GC="true" hydra-evaluator &
 hydra-queue-runner
