@@ -1,0 +1,4 @@
+<runcommand>
+  job = *:*:*
+  command = POSTBUILD_SERVER=<PB_SRV> python3 /setup/postbuild.py
+</runcommand>
