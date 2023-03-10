@@ -16,6 +16,8 @@ filesdir = "/files"
 webifydir = "/webify"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
+sbomfiles = "sbom.runtime*"
+vulnxsfiles = "vulns.runtime*.csv"
 imageprefix = ""
 webifyprefix = ""
 debug = 0
@@ -108,6 +110,25 @@ def inputs(inp, _):
     for i in inp:
         il.append([i["Name"], f'<A href="{i["Source"]}">{i["Source"]}</A>', f'<A href="{i["Source"]}/commit/{i["Hash"]}">{i["Hash"]}</A>'])
     return il
+
+
+def get_reports(fglob: str, webifypfx: str=None):
+    files = glob.glob(fglob)
+    if debug:
+        print(files)
+    res = []
+    for r in files:
+        link = f'<A href="{r}">{r}</A>'
+        if webifypfx != None:
+            htn = None
+            if r.endswith(".txt"):
+                htn = r.removesuffix(".txt") + ".html"
+            elif r.endswith(".csv"):
+                htn = r.removesuffix(".csv") + ".html"
+            if htn != None:
+                link += f' (<A href="{webifypfx}/{htn}">View as html</A>)'
+        res.append(link)
+    return res
 
 
 # ------------------------------------------------------------------------
@@ -221,15 +242,9 @@ def main(argv: list[str]):
             print(f"Unused keys: {uk}")
 
     # Find vulnix reports
-    vulreps = glob.glob(vulnixfiles)
-    if debug:
-        print(vulreps)
-    vl = []
-    for vr in vulreps:
-        htn = vr.removesuffix(".txt") + ".html"
-        vl.append(f'<A href="{webifyprefix}/{bnum}/{htn}">{vr}</A>')
-
-    result['Vulnix report'] = vl
+    rep = get_reports(vulnixfiles, f"{webifyprefix}/{bnum}")
+    if rep != []:
+        result['Vulnix report'] = rep
 
     # Find robot framework logs and reports
     resfils = glob.glob(resultfiles)
@@ -255,7 +270,18 @@ def main(argv: list[str]):
         else:
             name = str(markupsafe.escape(line)) + " Report"
         tr.append(f'<A href="{rf}">{name}</A>')
-    result['Test results'] = tr
+    if tr != []:
+        result['Test results'] = tr
+
+    # Find SBOMs
+    rep = get_reports(sbomfiles)
+    if rep != []:
+        result['SBOM'] = rep
+
+    # Find vulnxscan reports
+    rep = get_reports(vulnxsfiles, f"{webifyprefix}/{bnum}")
+    if rep != []:
+        result['Vulnxscan Report'] = rep
 
     # Render index.html
     with open("index.html","w") as file:
