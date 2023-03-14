@@ -7,32 +7,32 @@
 buildResults = [:]
 
 vulnixJob = 'nixOS/Supply_chain_security/vulnix'
+sbomJob = 'nixOS/Supply_chain_security/sbomnix'
 nucJob = 'nixOS/Testing/NUC_x86/nuc_x86_test_set'
 
 pipeline {
-    //agent {label 'NotInUse'}
     agent {label 'tc-agent02'}
     stages {
-        stage('clone ci-public') {
-            steps {
-                script {
-                    // Set pipeline description
-                    currentBuild.description = "Hydra BuildID: ${params.buildID}"
-                    try {
-                        sh 'git clone https://github.com/tiiuae/ci-public.git'
-                    }  catch(err) {
-                        println("Repo is already cloned")
-                    }
-                }
-            }
-        }
-        stage('Pull repository') {
-            steps {
-              dir('ci-public/'){
-                sh 'git pull'
-               }
-            }
-        }
+        // stage('clone ci-public') {
+        //     steps {
+        //         script {
+        //             // Set pipeline description
+        //             currentBuild.description = "Hydra BuildID: ${params.buildID}"
+        //             try {
+        //                 sh 'git clone https://github.com/tiiuae/ci-public.git'
+        //             }  catch(err) {
+        //                 println("Repo is already cloned")
+        //             }
+        //         }
+        //     }
+        // }
+        // stage('Pull repository') {
+        //     steps {
+        //       dir('ci-public/'){
+        //         sh 'git pull'
+        //        }
+        //     }
+        // }
         stage('vulnix') {
             steps {
                 script {
@@ -50,6 +50,28 @@ pipeline {
                     } else {
                       catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
                                     error("Vulnix build failed")
+                      }
+                    }
+                }
+            }
+        }
+        stage('sbomnix') {
+            steps {
+                script {
+                    build = build(
+                        job: "${sbomJob}", propagate: false,
+                        parameters: [
+                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                        ]
+                    )
+                    if(build.result == "SUCCESS") {
+                      buildResults."sbom" = "SUCCESS"
+                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                    } else {
+                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
+                                    error("sbom build failed")
                       }
                     }
                 }
@@ -79,7 +101,7 @@ pipeline {
         }
         stage('Add post processing timestamp to .json file and create index.html') {
             steps {
-              dir("ci-public/") {
+              script {
                   sh "python3 addtimestamp/add_timestamp.py ${params.resultsPath}/${params.buildID} ${params.buildID}.json"
               }
             }
@@ -87,7 +109,7 @@ pipeline {
         stage('Create index.html and bublish reports') {
             steps {
                dir("${params.resultsPath}/"){
-                  sh "python3 ~/Jenkins-agent/workspace/nixOS/post_processing_nuc/ci-public/indexer/indexer.py images/hydra/nuc build_reports/hydra  ${params.buildID}"
+                  sh "python3 ~/Jenkins-agent/workspace/nixOS/post_processing_nuc/indexer/indexer.py images/hydra/nuc build_reports/hydra  ${params.buildID}"
                   sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload/build_reports/hydra/${params.buildID}"
                   sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index build_reports/hydra/${params.buildID}"
                }

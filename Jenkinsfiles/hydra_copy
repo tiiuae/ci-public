@@ -9,7 +9,6 @@ imagesPath = '/home/tc-agent02/Jenkins-agent/workspace/images/'
 processingJob = 'nixOS/post_processing_nuc'
 
 pipeline {
-    //agent {label 'NotInUse'}
     agent {label 'tc-agent02'}
     stages {
         stage('Remove old working list') {
@@ -24,31 +23,31 @@ pipeline {
                 }
             }
         }
-        stage('clone ci-public') {
-            steps {
-                script {
-                    try {
-                        sh 'git clone https://github.com/tiiuae/ci-public.git'
-                    }  catch(err) {
-                        println("Repo is already cloned")
-                    }
-                }
-            }
-        }
-        stage('Pull repository') {
-            steps {
-              dir('ci-public/'){
-                sh 'git pull'
-               }
-            }
-        }
+        // stage('clone ci-public') {
+        //     steps {
+        //         script {
+        //             try {
+        //                 sh 'git clone https://github.com/tiiuae/ci-public.git'
+        //             }  catch(err) {
+        //                 println("Repo is already cloned")
+        //             }
+        //         }
+        //     }
+        // }
+        // stage('Pull repository') {
+        //     steps {
+        //       dir('ci-public/'){
+        //         sh 'git pull'
+        //        }
+        //     }
+        // }
         stage('hydrascrape') {
             environment {
                 PATH="$PATH:/nix/var/nix/profiles/default/bin/"
             }
             steps {
                 script {
-                    sh "python3 ci-public/hydrascrape/hydrascrape.py hydra.vedenemo.dev ${params.project} ${params.jobset} handled_builds "+ '\'python3 ci-public/hydrascrape/action.py\''
+                    sh "python3 hydrascrape/hydrascrape.py hydra.vedenemo.dev ${params.project} ${params.jobset} handled_builds "+ '\'python3 hydrascrape/action.py\''
                 }
             }
         }
