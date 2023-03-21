@@ -30,7 +30,8 @@ if [ -z "$1" ]; then
     echo ""
     echo "    Setting just uid or username will set also gid to that user's group and"
     echo "    aĺso set uid or username whichever was not given."
-    echo "    e.g. setting '--user=root' will imply '--uid=0' and '--gid=0'"
+    echo "    E.g. setting '--user=root' will imply '--uid=0' and '--gid=0'"
+    echo "    and setting '--uid=0' will imply '--user=root' and '--gid=0'."
     echo ""
     echo "  Commands:"
     echo "    udev   = Install the udev rule for yubihsm2 device"
@@ -113,7 +114,7 @@ udev)
 	EOF
 
     sudo udevadm control --reload-rules
-    sudo udevadm trigger
+    sudo udevadm trigger -a idVendor=1050 -a idProduct=0030
 ;;
 build)
     pushd "$SDIR" > /dev/null
@@ -145,7 +146,11 @@ remove)
     docker rmi "$CONTAINER"
 ;;
 bash)
-    docker exec -it -u "$YUBIUID" "$CONTAINER" /bin/bash
+    if [ -n "$UIDGIVEN" ] || [ -n "$USERGIVEN" ]; then
+        docker exec -it -u "$YUBIUID" "$CONTAINER" /bin/bash
+    else
+        docker exec -it "$CONTAINER" /bin/bash
+    fi
 ;;
 *)
     echo "Unknown command: $1"
