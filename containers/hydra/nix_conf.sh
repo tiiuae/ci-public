@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2022-2023 Marko Lindqvist <marko.lindqvist@unikie.com>
@@ -22,7 +22,11 @@ cd /setup/
 
 cp /etc/nix/nix.conf nix.conf
 
-nix_conf_line "cores" "4"
+# As the actual max number simultaneous tasks is cores * max-jobs,
+# Set "cores" lower than actual number of cores
+declare -i SET_CORES
+SET_CORES=$(nproc)/4
+nix_conf_line "cores" "${SET_CORES}"
 nix_conf_line "max-jobs" "16"
 
 if [ "$1" = "no" ] ; then
