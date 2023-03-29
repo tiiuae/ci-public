@@ -1,0 +1,7 @@
+"vuln_id","url","package","version","grype","osv","vulnix","sum","sortcol"
+"CVE-2023-28531","https://nvd.nist.gov/vuln/detail/CVE-2023-28531","openssh","9.1p1","1","0","1","2","2023A0000028531"
+"CVE-2023-27371","https://nvd.nist.gov/vuln/detail/CVE-2023-27371","libmicrohttpd","0.9.71","1","0","1","2","2023A0000027371"
+"CVE-2023-27320","https://nvd.nist.gov/vuln/detail/CVE-2023-27320","sudo","1.9.13","0","0","1","1","2023A0000027320"
+"CVE-2023-25193","https://nvd.nist.gov/vuln/detail/CVE-2023-25193","harfbuzz","5.2.0","1","0","1","2","2023A0000025193"
+"CVE-2023-23914","https://nvd.nist.gov/vuln/detail/CVE-2023-23914","curl","7.86.0","0","0","1","1","2023A0000023914"
+"CVE-2023-22743","https://nvd.nist.gov/vuln/detail/CVE-2023-22743","git","2.38.4","0","0","1","1","2023A0000022743"
