@@ -443,6 +443,13 @@ def main(argv):
         else:
             jobsetdata['enabled'] = '1'
 
+        # Be sure to only enable, never to explicitly disable, this.
+        # When one tries to set it to ANY value, hydra side parser
+        # checks if these have been disabled on server or project
+        # level, and complains if they are.
+        if args['edrch'] == True:
+            jobsetdata['enable_dynamic_run_command'] = 'true'
+
         if args['input'] != None:
             for inp in args['input']:
                 # Setup given inputs in jobset data
