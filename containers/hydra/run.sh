@@ -16,6 +16,7 @@ export HYDRA_DATA="/home/hydra/db"
 export HYDRA_CONFIG="/setup/hydra.conf"
 hydra-server &
 GC_DONT_GC="true" hydra-evaluator &
+hydra-notify &
 hydra-queue-runner
 
 pg_ctl stop -D /home/hydra/db
