@@ -10,5 +10,12 @@
 # We have no sed to easily use template
 
 (
+  echo "<runcommand>"
+  echo "  job = *:*:*"
+  echo "  command = POSTBUILD_SERVER=${1} python3 /setup/postbuild.py"
+  echo "</runcommand>"
   echo "max_output_size = 8589934393;"
 ) > /setup/hydra.conf
+
+# Install python3 that the postbuild.py will need when used
+nix-env -i python3

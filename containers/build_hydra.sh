@@ -39,6 +39,8 @@ if [ "$HC_REMOTE_BUILDERS" != "yes" ] && [ "$HC_REMOTE_BUILDERS" != "no" ] ; the
   exit 1
 fi
 
-docker build --build-arg HYDRA_UID="$HYDRA_UID" --build-arg HYDRA_GID="$HYDRA_GID" \
+docker build --build-arg HYDRA_UID="$HYDRA_UID" \
+             --build-arg HYDRA_GID="$HYDRA_GID" \
              --build-arg HYDRA_REMOTE_BUILDERS="$HC_REMOTE_BUILDERS" \
+             --build-arg PB_SRV="$HC_PB_SRV" \
              -t "$HC_BASE_LABEL" hydra $CONTAINER_DEBUG -f hydra/Dockerfile

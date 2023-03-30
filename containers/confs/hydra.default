@@ -10,6 +10,9 @@ HC_BASE_LABEL="hydra"
 
 #HC_CHANNEL="22.05"
 
+# Server identifier
+HC_PB_SRV="hydra"
+
 # If "no",  build only locally.
 # If "yes", will use <store>/home/machines file, which then must be provided
 HC_REMOTE_BUILDERS=no
