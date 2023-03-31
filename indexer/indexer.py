@@ -16,8 +16,10 @@ filesdir = "/files"
 webifydir = "/webify"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
-sbomfiles = "sbom.runtime*"
-vulnxsfiles = "vulns.runtime*.csv"
+sbomfiles = "sbom.*"
+vulnxsfiles = "vulns.*.csv"
+vulns_fixed = "vulns_fixed.*.csv"
+vulns_new = "vulns_new.*.csv"
 imageprefix = ""
 webifyprefix = ""
 debug = 0
@@ -282,6 +284,16 @@ def main(argv: list[str]):
     rep = get_reports(vulnxsfiles, f"{webifyprefix}/{bnum}")
     if rep != []:
         result['Vulnxscan Report'] = rep
+
+    # Find fixed vulnerabilities
+    rep = get_reports(vulns_fixed, f"{webifyprefix}/{bnum}")
+    if rep != []:
+        result['Fixed vulnerabilities'] = rep
+
+    # Find new vulnerabilities
+    rep = get_reports(vulns_new, f"{webifyprefix}/{bnum}")
+    if rep != []:
+        result['New vulnerabilities'] = rep
 
     # Render index.html
     with open("index.html","w") as file:

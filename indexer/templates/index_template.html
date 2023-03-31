@@ -4,13 +4,18 @@
 <META charset="UTF-8">
 <TITLE>{{ title }}</TITLE>
 <LINK rel="stylesheet" href="/base.css">
+<STYLE>
+#New\ vulnerabilities {
+    color: red;
+}
+</STYLE>
 </HEAD>
 <BODY>
 <P><A href="javascript:history.back()">Back</A></P>
 <TABLE>
 {% for key, value in result.items() %}
     <TR>
-        <TH align="right">{{ key }}:</TH>
+        <TH align="right" id="{{ key }}">{{ key }}:</TH>
         {% if value is sequence and value is not mapping and value is not string %}
             <TD>
             {% if key == "Inputs" %}
