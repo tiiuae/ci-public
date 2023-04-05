@@ -4,9 +4,10 @@
 // SPDX-FileCopyrightText: 2022-2023 Unikie
 // SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 
-resultsPath = '/home/tc-agent02/Jenkins-agent/workspace/results'
+resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/${params.server}"
 imagesPath = '/home/tc-agent02/Jenkins-agent/workspace/images/'
-processingJob = 'nixOS/post_processing_nuc'
+nucProcessingJob = 'nixOS/post_processing_nuc'
+orinProcessingJob = 'nixOS/post_processing_orin'
 
 pipeline {
     agent {label 'tc-agent02'}
@@ -23,24 +24,6 @@ pipeline {
                 }
             }
         }
-        // stage('clone ci-public') {
-        //     steps {
-        //         script {
-        //             try {
-        //                 sh 'git clone https://github.com/tiiuae/ci-public.git'
-        //             }  catch(err) {
-        //                 println("Repo is already cloned")
-        //             }
-        //         }
-        //     }
-        // }
-        // stage('Pull repository') {
-        //     steps {
-        //       dir('ci-public/'){
-        //         sh 'git pull'
-        //        }
-        //     }
-        // }
         stage('hydrascrape') {
             environment {
                 PATH="$PATH:/nix/var/nix/profiles/default/bin/"
@@ -68,13 +51,32 @@ pipeline {
                         println("BuildID: ${data[0]} Store path: ${buildData['Output store paths'][0]}")
 
                         // Make directory and copy buildID.json there
-                        sh "mkdir ${resultsPath}/${data[0]}"
+                        sh "mkdir -p ${resultsPath}/${data[0]}"
                         sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
 
                         if ("${buildData['Job']}".contains("nuc")) {
                             //Trigger post processing pipeline
                             try {
-                                build job: "${processingJob}", parameters: [[$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"], [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"], [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"]]
+                                build job: "${nucProcessingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                                ]
+                            }catch (err) {
+                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            }
+                        } else if ("${buildData['Job']}".contains("orin")) {
+                            //Trigger post processing pipeline
+                            try {
+                                build job: "${orinProcessingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                                ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
                             }
