@@ -14,3 +14,6 @@
 /nix/store/5sgii519481kdsdg9kk027jlr7z641wd-bash-5.1.tar.gz
 /nix/store/s1bb06rzbxlvq08sg0ymwdgcgd1a7xh3-gettext-0.21.tar.gz
 /nix/store/9vm1ihdg1ysmrjdbb80g834iizzxb4yk-bison-3.8.2.tar.gz
+
+# Another file failing to download on from-scratch build
+/nix/store/byib83r321c1fjgdk37kai1q1zxncra7-sys-cdefs.h
