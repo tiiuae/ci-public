@@ -5,6 +5,9 @@
 
 # List of packages to install in the setup phase
 
+# These gnu.org packages are needed to build the tools that would
+# make downloading from gnu.org possible, at least by the method
+# that nixpkgs recipes for them use.
 /nix/store/wp9v6jcv4vdxp8vwrfsb3q6qfalf2n5l-libunistring-1.0.tar.gz
 /nix/store/x4jhvxj104vdciivf1zvijncyd4rd3dp-mpc-1.2.1.tar.gz
 /nix/store/349f140sh7m12vy9mp1wkp58axyp06c9-which-2.21.tar.gz
@@ -14,6 +17,9 @@
 /nix/store/5sgii519481kdsdg9kk027jlr7z641wd-bash-5.1.tar.gz
 /nix/store/s1bb06rzbxlvq08sg0ymwdgcgd1a7xh3-gettext-0.21.tar.gz
 /nix/store/9vm1ihdg1ysmrjdbb80g834iizzxb4yk-bison-3.8.2.tar.gz
+/nix/store/0xiwj5b1vsxpzvqw2y16x86ya4k2f36p-ncurses-6.3-20220507.tgz
 
-# Another file failing to download on from-scratch build
+
+# Other files failing to download on from-scratch build
 /nix/store/byib83r321c1fjgdk37kai1q1zxncra7-sys-cdefs.h
+/nix/store/06d2xkrl3h1pbyg3m1whz1mvhafqgsqq-source
