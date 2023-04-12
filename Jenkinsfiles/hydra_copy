@@ -54,10 +54,10 @@ pipeline {
                         sh "mkdir -p ${resultsPath}/${data[0]}"
                         sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
 
-                        if ("${buildData['Job']}".contains("nuc")) {
-                            //Trigger post processing pipeline
+                        if ("${buildData['Job']}".contains("orin")) {
+                            //Trigger Orin post processing pipeline
                             try {
-                                build job: "${nucProcessingJob}", parameters: [
+                                build job: "${orinProcessingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
@@ -67,10 +67,10 @@ pipeline {
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
                             }
-                        } else if ("${buildData['Job']}".contains("orin")) {
-                            //Trigger post processing pipeline
+                        } else if ("${buildData['Job']}".contains("nuc")) {
+                            //Trigger NUC post processing pipeline
                             try {
-                                build job: "${orinProcessingJob}", parameters: [
+                                build job: "${nucProcessingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
