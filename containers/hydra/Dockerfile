@@ -21,12 +21,13 @@ ARG HYDRA_UID
 ARG HYDRA_GID
 ARG HYDRA_REMOTE_BUILDERS
 ARG PB_SRV
+ARG HYDRA_URL
 
 RUN nix-env -i hydra -i postgresql
 
 RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
     /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
-    /setup/hydra_conf.sh "$PB_SRV"
+    /setup/hydra_conf.sh "$PB_SRV" "$HYDRA_URL"
 
 RUN mkdir -p /run/postgresql && chmod go+w /run/postgresql
 COPY launch.sh run.sh /launch/

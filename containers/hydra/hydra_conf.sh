@@ -15,6 +15,8 @@
   echo "  command = POSTBUILD_SERVER=${1} python3 /setup/postbuild.py"
   echo "</runcommand>"
   echo "max_output_size = 8589934393;"
+  echo "base_uri = ${2}"
+  echo "using_frontend_proxy = 1"
 ) > /setup/hydra.conf
 
 # Install python3 that the postbuild.py will need when used
