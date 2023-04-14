@@ -43,6 +43,15 @@ def _getargs():
         "and RIGHT_CSV before comparing them."
     )
     parser.add_argument("--ignoredups", help=helps, action="store_true")
+    helps = (
+        "Space-separated list of column names to use as basis for diff "
+        "between the two files. By default, when this option is not "
+        "specified, the csv files are compared across all column names. "
+        "As an example `--cols name version id` would compare the csv "
+        "files based on data only on columns 'name', 'version', and 'id' "
+        "discarding possible values on all other columns."
+    )
+    parser.add_argument("--cols", help=helps, nargs="+", default=None)
     helps = "Set the debug verbosity level between 0-2 (default: --verbose=1)"
     parser.add_argument("--verbose", help=helps, type=int, default=1)
     return parser.parse_args()
@@ -107,7 +116,7 @@ def df_from_csv_file(name):
 ###############################################################################
 
 
-def _csv_diff(path_left, path_right, ignoredups=False):
+def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
     """Return the diff of two csv files"""
     # Read csv file into pandas dataframe
     df_left = df_from_csv_file(path_left)
@@ -115,22 +124,34 @@ def _csv_diff(path_left, path_right, ignoredups=False):
     if ignoredups:
         df_left.drop_duplicates(keep="first", inplace=True)
         df_right.drop_duplicates(keep="first", inplace=True)
-    # Error out if colum names don't match
-    cols_diff = set(df_left.columns) ^ set(df_right.columns)
-    if cols_diff:
-        LOG.fatal(
-            "Mismatch in column names\n\n  left: %s\n  right:%s",
-            list(df_left.columns),
-            list(df_right.columns),
-        )
-        sys.exit(1)
+    if cols is not None:
+        # Diff based on the given column names
+        uids = list(cols)
+        if not set(cols).issubset(df_left.columns):
+            LOG.fatal("Not all column names %s in LEFT_CSV", cols)
+            sys.exit(1)
+        if not set(cols).issubset(df_right.columns):
+            LOG.fatal("Not all column names %s in RIGHT_CSV", cols)
+            sys.exit(1)
+        LOG.info("Using column names %s as uid", uids)
+    else:
+        # Otherwise, diff based on all column names
+        uids = list(df_left.columns)
+        # Error out if colum names between the two files don't match
+        cols_diff = set(df_left.columns) ^ set(df_right.columns)
+        if cols_diff:
+            LOG.fatal(
+                "Mismatch in column names\n\n  left: %s\n  right:%s",
+                list(df_left.columns),
+                list(df_right.columns),
+            )
+            sys.exit(1)
     if df_left.empty:
         LOG.fatal("No rows in LEFT_CSV")
         sys.exit(1)
     if df_right.empty:
         LOG.fatal("No rows in RIGHT_CSV")
         sys.exit(1)
-    uids = list(df_left.columns)
     # Add 'count' column that indicates the count of duplicates by 'uids'
     df_left_uidg = df_left.groupby(by=uids).size().reset_index(name="count")
     df_right_uidg = df_right.groupby(by=uids).size().reset_index(name="count")
@@ -206,7 +227,7 @@ def main():
     left_csv = args.LEFT_CSV.as_posix()
     right_csv = args.RIGHT_CSV.as_posix()
     LOG.info("Comparing 'LEFT_CSV=%s' 'RIGHT_CSV=%s'", left_csv, right_csv)
-    df_diff = _csv_diff(left_csv, right_csv, args.ignoredups)
+    df_diff = _csv_diff(left_csv, right_csv, args.ignoredups, args.cols)
     diff = not bool(_report_diff(df_diff))
     df_to_csv_file(df_diff, args.out)
     sys.exit(int(diff))

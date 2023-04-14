@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, global-statement, redefined-outer-name
 
 """ Tests for csvdiff """
 
@@ -14,19 +14,28 @@ from pathlib import Path
 import pytest
 
 MYDIR = Path(os.path.dirname(os.path.realpath(__file__)))
-TEST_WORK_DIR = MYDIR / "csvdiff_test_data"
+TEST_WORK_DIR = None
 REPOROOT = MYDIR / ".."
 CSVDIFF = MYDIR / ".." / "src" / "csvdiff.py"
 
 ################################################################################
 
 
+@pytest.fixture(scope="session")
+def test_work_dir(tmp_path_factory):
+    """Fixture for session-scope tempdir"""
+    tempdir = tmp_path_factory.mktemp("test_csvdiff")
+    return Path(tempdir)
+
+
 @pytest.fixture(autouse=True)
-def set_up_test_data():
+def set_up_test_data(test_work_dir):
     """Fixture to set up the test data"""
     print("setup")
-    shutil.rmtree(TEST_WORK_DIR, ignore_errors=True)
+    global TEST_WORK_DIR
+    TEST_WORK_DIR = test_work_dir
     TEST_WORK_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"using TEST_WORK_DIR: {TEST_WORK_DIR}")
     os.chdir(TEST_WORK_DIR)
     yield "resource"
     print("clean up")
@@ -95,6 +104,24 @@ def test_csvdiff_ignoredups():
     cmd = [CSVDIFF, "--ignoredups", left_path, left_dups_path]
     ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
     assert ret.returncode == 0
+
+
+def test_csvdiff_cols_valid():
+    """Test csvdiff with --cols with valid column names"""
+    left_path = MYDIR / "resources" / "left.csv"
+    assert left_path.exists()
+    cmd = [CSVDIFF, left_path, left_path, "--cols", "vuln_id", "package"]
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 0
+
+
+def test_csvdiff_cols_invalid():
+    """Test csvdiff with --cols with invalid column names"""
+    left_path = MYDIR / "resources" / "left.csv"
+    assert left_path.exists()
+    cmd = [CSVDIFF, left_path, left_path, "--cols", "a"]
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
 
 
 def test_csvdiff_cols_mismatch():
