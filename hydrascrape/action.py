@@ -147,8 +147,9 @@ def main(argv: list[str]):
 
     jsonf = os.getenv("HYDRA_POSTBUILD_INFO")
     if jsonf == None:
-        # Return zero so this build will be marked as handled
-        perror("Warning: HYDRA_POSTBUILD_INFO not defined, ignoring old build", 0)
+        # Return nonzero so this build will be retried, this could happen if scraping was done at the exact
+        # time that other build info was available on Hydra, but runcommands were not finished yet.
+        perror("Error: HYDRA_POSTBUILD_INFO not defined")
 
     # Copy build info json file
     nix_copy(cacheurl, [jsonf])
