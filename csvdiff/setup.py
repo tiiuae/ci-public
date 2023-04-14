@@ -17,7 +17,7 @@ def project_path(*names):
     return os.path.join(os.path.dirname(__file__), *names)
 
 
-with open(project_path("VERSION")) as f:
+with open(project_path("VERSION"), encoding="utf-8") as f:
     version = f.read().strip()
 
 requires = [
