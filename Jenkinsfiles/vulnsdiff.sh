@@ -34,7 +34,45 @@ check_file_exists "$vulns_current_path"
 
 # Compare csv files $vulns_csv_baseline_path and $vulns_current_path
 printf '\n\n---\nRun csvdiff\n---\n'
-nix run github:tiiuae/ci-public?dir=csvdiff#csvdiff -- "$vulns_csv_baseline_path" "$vulns_current_path" |& strip_ansi_colors
+# We use csvdiff to compare the vulnerabilities between the specified builds.
+# The command-line arguments '--cols=vuln_id,package' and '--ignoredups'
+# deserve an explanation:
+#
+#   csvdiff command-line argument '--cols=vuln_id,package' indicates that
+#   we only want to consider differences in columns 'vuln_id' and 'package'.
+#   '--ignoredups' indicates we want to ignore the differences in the count
+#   of same vulnerabilities (as identified by the specified column names).
+#
+#   Following example illustrates this:
+#
+#   left:
+#     vuln_id      | package | version
+#    --------------+---------+---------
+#     CVE-2023-123 | openssh | 9.1p1
+#     CVE-2023-123 | openssh | 9.1p2
+#
+#   right:
+#     vuln_id      | package | version
+#    --------------+---------+---------
+#     CVE-2023-123 | openssh | 9.2
+#
+#   If we compared the above examples 'left' and 'right' with
+#   csvdiff without '--cols=vuln_id,package', csvdiff would consider all
+#   the rows unique due to different version numbers. Therefore, we would
+#   incorrectly end up reporting all the vulnerabilities in 'left' as
+#   fixed, and the one vulnerability in 'right' as new vulnerability.
+#
+#   With '--cols=vuln_id,package' but without '--ignoredups', csvdiff would
+#   count the number of unique entries by vuln_id and package and report
+#   the difference, that is, that 'left' had two entries of
+#   {CVE-2023-123,openssh}, whereas, 'right' only had one.
+#
+#   With both '--cols=vuln_id,package' and '--ignoredups', csvdiff correctly
+#   considers all the vulnerabilities in 'left' and 'right' as the same as
+#   well as ignores the difference in the count of unique entries in 'left'
+#   and 'right'.
+#
+nix run github:tiiuae/ci-public?dir=csvdiff#csvdiff -- "$vulns_csv_baseline_path" "$vulns_current_path" --ignoredups --cols=vuln_id,package |& strip_ansi_colors
 check_file_exists "csvdiff.csv"
 
 printf '\n\n---\nListing fixed vulnerabilities (compared to %s)\n---\n' "$vulns_csv_baseline_path"

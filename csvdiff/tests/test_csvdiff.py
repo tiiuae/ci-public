@@ -110,7 +110,7 @@ def test_csvdiff_cols_valid():
     """Test csvdiff with --cols with valid column names"""
     left_path = MYDIR / "resources" / "left.csv"
     assert left_path.exists()
-    cmd = [CSVDIFF, left_path, left_path, "--cols", "vuln_id", "package"]
+    cmd = [CSVDIFF, left_path, left_path, "--cols=vuln_id,package"]
     ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
     assert ret.returncode == 0
 
@@ -119,7 +119,7 @@ def test_csvdiff_cols_invalid():
     """Test csvdiff with --cols with invalid column names"""
     left_path = MYDIR / "resources" / "left.csv"
     assert left_path.exists()
-    cmd = [CSVDIFF, left_path, left_path, "--cols", "a"]
+    cmd = [CSVDIFF, left_path, left_path, "--cols=a"]
     ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
     assert ret.returncode == 1
 
@@ -132,6 +132,34 @@ def test_csvdiff_cols_mismatch():
     assert right_path.exists()
     cmd = [CSVDIFF, left_path, right_path]
     assert subprocess.run(cmd, check=False).returncode == 1
+
+
+def test_csvdiff_cols_dups():
+    """Test csvdiff combining both --cols and --ignoredups"""
+    left_path = MYDIR / "resources" / "left_cols_dups.csv"
+    assert left_path.exists()
+    right_path = MYDIR / "resources" / "right_cols_dups.csv"
+    assert right_path.exists()
+    # Without --cols and --ignoredups
+    cmd = [CSVDIFF, left_path, right_path]
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
+    assert "LEFT_ONLY rows: 3" in ret.stderr
+    assert "RIGHT_ONLY rows: 1" in ret.stderr
+    # With --cols and without --ignoredups
+    cmd = [CSVDIFF, left_path, right_path, "--cols=vuln_id,package"]
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
+    assert "LEFT_ONLY rows: 1" in ret.stderr
+    # With --cols and --ignoredups
+    cmd = [
+        CSVDIFF,
+        left_path,
+        right_path,
+        "--ignoredups",
+        "--cols=vuln_id,package",
+    ]
+    assert subprocess.run(cmd, check=False).returncode == 0
 
 
 def test_csvdiff_noentries():
