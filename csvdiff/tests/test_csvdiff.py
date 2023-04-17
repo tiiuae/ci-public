@@ -150,7 +150,7 @@ def test_csvdiff_cols_dups():
     cmd = [CSVDIFF, left_path, right_path, "--cols=vuln_id,package"]
     ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
     assert ret.returncode == 1
-    assert "LEFT_ONLY rows: 1" in ret.stderr
+    assert "LEFT_ONLY rows: 3" in ret.stderr
     # With --cols and --ignoredups
     cmd = [
         CSVDIFF,

@@ -172,6 +172,12 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
         on=uids,
         suffixes=("_left", "_right"),
     )
+    if set(uids) != set(df_left.columns):
+        # Get back the dropped columns from df_left
+        df_diff = df_diff.merge(df_left, how="inner", on=uids)
+    if set(uids) != set(df_right.columns):
+        # Get back the dropped columns from df_right
+        df_diff = df_diff.merge(df_right, how="inner", on=uids, suffixes=("", "_right"))
     # Add column 'diff' that classifies the diff status
     df_diff["diff"] = df_diff.apply(_classify_row, axis=1)
     if LOG.level <= logging.DEBUG:
