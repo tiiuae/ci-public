@@ -1,0 +1,4 @@
+"vuln_id","package","version"
+"CVE-2023-28531","openssh","9.1p1"
+"CVE-2023-28531","openssh","9.1p2"
+"CVE-2023-28531","openssh","9.2"

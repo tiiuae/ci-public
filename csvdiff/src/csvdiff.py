@@ -44,14 +44,19 @@ def _getargs():
     )
     parser.add_argument("--ignoredups", help=helps, action="store_true")
     helps = (
-        "Space-separated list of column names to use as basis for diff "
+        "Comma-separated list of column names to use as basis for diff "
         "between the two files. By default, when this option is not "
         "specified, the csv files are compared across all column names. "
-        "As an example `--cols name version id` would compare the csv "
+        "As an example `--cols=name,version,id` would compare the csv "
         "files based on data only on columns 'name', 'version', and 'id' "
         "discarding possible values on all other columns."
     )
-    parser.add_argument("--cols", help=helps, nargs="+", default=None)
+    parser.add_argument(
+        "--cols",
+        help=helps,
+        type=lambda s: [str(col) for col in s.split(",")],
+        default=None,
+    )
     helps = "Set the debug verbosity level between 0-2 (default: --verbose=1)"
     parser.add_argument("--verbose", help=helps, type=int, default=1)
     return parser.parse_args()
@@ -121,9 +126,6 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
     # Read csv file into pandas dataframe
     df_left = df_from_csv_file(path_left)
     df_right = df_from_csv_file(path_right)
-    if ignoredups:
-        df_left.drop_duplicates(keep="first", inplace=True)
-        df_right.drop_duplicates(keep="first", inplace=True)
     if cols is not None:
         # Diff based on the given column names
         uids = list(cols)
@@ -146,6 +148,12 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
                 list(df_right.columns),
             )
             sys.exit(1)
+    if ignoredups:
+        # Drop duplicates either by given column names or all column names if
+        # ignoredups was requested
+        dupsby = cols if cols else df_left.columns
+        df_left.drop_duplicates(subset=dupsby, keep="first", inplace=True)
+        df_right.drop_duplicates(subset=dupsby, keep="first", inplace=True)
     if df_left.empty:
         LOG.fatal("No rows in LEFT_CSV")
         sys.exit(1)
