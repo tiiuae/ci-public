@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-License-Identifier: Apache-2.0
+
+# Jenkins controller container configuration, defaults & applying overrides
+
+JCC_PORT=8081
+JCC_BASE_LABEL="jenkins-control"
+
+if [ -f confs/jenkins_controller.local ] ; then
+  # Possible overrides
+  . confs/jenkins_controller.local
+fi
