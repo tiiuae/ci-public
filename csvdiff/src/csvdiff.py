@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name, protected-access
+# pylint: disable=invalid-name, protected-access, too-many-locals
 
 """ Python script for comparing two csv files """
 
@@ -172,18 +172,31 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
         on=uids,
         suffixes=("_left", "_right"),
     )
-    if set(uids) != set(df_left.columns):
-        # Get back the dropped columns from df_left
-        df_diff = df_diff.merge(df_left, how="inner", on=uids)
-    if set(uids) != set(df_right.columns):
-        # Get back the dropped columns from df_right
-        df_diff = df_diff.merge(df_right, how="inner", on=uids, suffixes=("", "_right"))
     # Add column 'diff' that classifies the diff status
     df_diff["diff"] = df_diff.apply(_classify_row, axis=1)
     if LOG.level <= logging.DEBUG:
         df_to_csv_file(df_diff, "df_diff_raw.csv")
+
+    # Below, we read back the columns that got dropped in the earlier
+    # groupby statements. This is only needed if '--cols' was specified:
+    if cols is not None:
+        dfs = []
+        df_both = df_diff[df_diff["diff"] == "both"]
+        df_left_only = df_diff[df_diff["diff"] == "left_only"]
+        df_right_only = df_diff[df_diff["diff"] == "right_only"]
+        dfs.append(df_left_only.merge(df_left, how="left", on=uids))
+        dfs.append(df_right_only.merge(df_right, how="left", on=uids))
+        df_both_left = df_both.merge(df_left, how="left", on=uids)
+        common_cols = list(df_both_left.columns.intersection(df_right.columns))
+        # For non-uid common columns, where the values don't match use the value
+        # from 'left'
+        dfs.append(df_both_left.merge(df_right, how="left", on=common_cols))
+        df_diff = pd.concat(dfs).reset_index(drop=True)
+
     # Remove temporary columns we added above
     df_diff.drop(["count_left", "count_right", "_merge"], inplace=True, axis=1)
+    # Make sure 'diff' column is the last column
+    df_diff["diff"] = df_diff.pop("diff")
     # Drop duplicate rows
     df_diff.drop_duplicates(keep="first", inplace=True)
     # Sort rows ignoring case
