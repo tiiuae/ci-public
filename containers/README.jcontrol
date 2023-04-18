@@ -1,0 +1,27 @@
+  Copyright 2023 TII (SSRC) and the Ghaf contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
+
+Custom configuration can be done in confs/jenkins_controller.local
+See confs/jenkins_controller.default for the values that can be adjusted.
+
+To create jenkins controller container:
+./build_jenkins_controller.sh [uid=current uid] [gid=current gid]
+The uid and the gid of the jenkins user inside the container
+should be such that they have write permissions to the external
+persistent store.
+
+External store gets initialized at the first container run.
+Store directory should not exist beforehand.
+./run_jenkins_controller.sh [persistent store=./jcontrol]
+
+On the first run, initial password for configuring jenkins
+gets printed.
+
+Running the container currently ends to running a shell
+inside the container. One can stop the container simply
+by exiting that shell by 'exit' command.
+
+While the container is running, jenkins should be visible
+on the host by http://localhost:8081
+(or what ever port is defined in the confs/jenkins_controller.local)
