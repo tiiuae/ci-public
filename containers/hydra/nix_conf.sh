@@ -11,11 +11,11 @@
 # $2 - value
 function nix_conf_line() {
   if grep "$1[ =]" nix.conf > /dev/null ; then
-    sed "s/$1[ =].*/$1 = $2/" nix.conf > nix.conf.new
+    # We have no 'sed', so use grep to remove old line entirely
+    grep -v "$1[ =]" nix.conf > nix.conf.new
     mv nix.conf.new nix.conf
-  else
-    echo "$1 = $2" >> nix.conf
   fi
+  echo "$1 = $2" >> nix.conf
 }
 
 cd /setup/
@@ -39,6 +39,9 @@ nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/
 nix_conf_line "post-build-hook" "/setup/upload.sh"
 nix_conf_line "system-features" "nixos-test benchmark big-parallel kvm"
 nix_conf_line "experimental-features" "nix-command flakes"
+
+# This requires --privileged container.
+nix_conf_line "sandbox" "true"
 
 CONFFILE=$(nix-store --add nix.conf)
 

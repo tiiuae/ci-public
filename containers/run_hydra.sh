@@ -11,6 +11,8 @@
 
 . confs/hydra.default
 
+PRIVILEGED="--privileged"
+
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
   echo "Usage: $0 [store root=./store] [/srv mount=not in use] [debug mode=false]"
   exit
@@ -96,18 +98,24 @@ if ! [ -f "${STORE}/populated" ] ; then
 
   echo "Copying store"
   # Mount store as /nix/outside, so the container can copy files between internal store and outside store
-  docker run -i -p ${HC_PORT}:3000 --mount type=bind,source="${STORE}/nix",target=/nix/outside --mount type=bind,source="${STORE}/home",target=/nix/outside_home -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "$HC_BASE_LABEL"
+  docker run -i -p ${HC_PORT}:3000 \
+       $PRIVILEGED \
+       --mount type=bind,source="${STORE}/nix",target=/nix/outside \
+       --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
+       -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "$HC_BASE_LABEL"
 
   # Mount store over the nix store, run rest of the setup
   mkdir -p "${STORE}/home"
   echo "Restarting container, running setup"
   docker run -i -p ${HC_PORT}:3000 \
-	 --mount type=bind,source="${STORE}/nix",target=/nix \
-	 --mount type=bind,source="${STORE}/home",target=/home/hydra \
-	 -e SETUP_RUN=2 -e PW_ADMIN="$PW_ADMIN" -e PW_AUTO="$PW_AUTO" \
-	 -t "$HC_BASE_LABEL"
+       $PRIVILEGED \
+       --mount type=bind,source="${STORE}/nix",target=/nix \
+       --mount type=bind,source="${STORE}/home",target=/home/hydra \
+       -e SETUP_RUN=2 -e PW_ADMIN="$PW_ADMIN" -e PW_AUTO="$PW_AUTO" \
+       -t "$HC_BASE_LABEL"
   echo "Restarting container, configuring hydra projects and jobsets"
   docker run --name "${HC_BASE_LABEL}-configure" -p ${HC_PORT}:3000 \
+       $PRIVILEGED \
        --mount type=bind,source="${STORE}/nix",target=/nix \
        --mount type=bind,source="${STORE}/home",target=/home/hydra \
        -t "$HC_BASE_LABEL" &
@@ -144,12 +152,14 @@ echo "MOUNTS:" $MOUNTS
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
   docker run -i -p ${HC_PORT}:3000 \
+	 $PRIVILEGED \
 	 $MOUNTS \
 	 -e SETUP_RUN="ext" \
          -t "$HC_BASE_LABEL"
 else
   # Regular run
   docker run -i -p ${HC_PORT}:3000 \
+	 $PRIVILEGED \
          $MOUNTS \
          -t "$HC_BASE_LABEL"
 fi
