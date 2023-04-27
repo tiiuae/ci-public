@@ -21,3 +21,7 @@
 # Other files failing to download on from-scratch build
 /nix/store/byib83r321c1fjgdk37kai1q1zxncra7-sys-cdefs.h
 /nix/store/06d2xkrl3h1pbyg3m1whz1mvhafqgsqq-source
+/nix/store/rnay1kyfxqvjhmk0bfj7g85q6zskk1xy-sys-tree.h
+/nix/store/08cgqvix4am7rhgkp6j77mv9k9ia7p7q-CVE-2020-35492.patch
+/nix/store/ah9gyp7rxak9ig2q829myn6172jn302f-hack-font-3.003
+/nix/store/n47nsa09pban4cjhbcapm7a7lp7n1x5k-fira-code-6.2
