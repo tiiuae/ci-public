@@ -1,9 +1,7 @@
 #!/usr/bin/env pipenv-shebang
 # ------------------------------------------------------------------------
-# SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: 2022-2023 Tero Tervala <tero.tervala@unikie.com>
-# SPDX-FileCopyrightText: 2022-2023 Unikie
 # SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
+# SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
 # Script for extracting build information from a hydra server to
 # facilitate further processing in e.g. Jenkins environment.

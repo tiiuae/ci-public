@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-# SPDX-FileCopyrightText: 2023 Unikie
 # SPDX-License-Identifier: Apache-2.0
 
 check_file_exists () {
