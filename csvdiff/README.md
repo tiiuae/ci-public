@@ -1,7 +1,6 @@
 <!--
-SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-
-SPDX-License-Identifier: Apache-2.0
+    Copyright 2022-2023 TII (SSRC) and the Ghaf contributors
+    SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
 # csvdiff
