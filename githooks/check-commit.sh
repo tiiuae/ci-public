@@ -87,7 +87,8 @@ sed -i 's/^[[:blank:]]*[sS][iI][gG][nN][eE][dD][ _-]*[oO][fF][fF][ _-]*[bB][yY][
 
 SUBJECT="$(head -n 1 "$DEST")"
 SECONDLINE="$(head -n 2 "$DEST" | tail -n 1)"
-BODYLINELEN="$(grep -v -e "^[[:blank:]]*#" "$DEST" | tail -n +2 | wc -L | cut -d ' ' -f 1)"
+# Get the longest line length ignoring comments and Signed-off-by field
+BODYLINELEN="$(grep -v -e "^[[:blank:]]*#" -e "^Signed-off-by:" "$DEST" | tail -n +2 | wc -L | cut -d ' ' -f 1)"
 
 FAILED=
 WARNED=
@@ -196,6 +197,7 @@ if [ -n "$WARNED" ]; then
         read -r STR < /dev/tty
         case "$STR" in
         y|Y)
+            echo "Commit message accepted with warnings"
             exit 0
         ;;
         n|N)
@@ -208,3 +210,5 @@ if [ -n "$WARNED" ]; then
         esac
     done
 fi
+
+echo "Commit message seems OK"
