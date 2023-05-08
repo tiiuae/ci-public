@@ -18,6 +18,10 @@ HYDRA_URL="localhost:${HC_PORT}"
 # If "yes", will use <store>/home/machines file, which then must be provided
 HC_REMOTE_BUILDERS=no
 
+# Entry to add to the container hosts file (for address resolution).
+# Currently can't contain multiple entries.
+#HC_CUSTOM_HOSTS="hostname:ip"
+
 if [ -f confs/hydra.local ] ; then
   # Possible overrides
   . confs/hydra.local
