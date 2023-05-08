@@ -147,17 +147,25 @@ fi
 
 echo "MOUNTS:" $MOUNTS
 
+if [ "$HC_CUSTOM_HOSTS" != "" ] ; then
+  HOSTS="--add-host=${HC_CUSTOM_HOSTS}"
+else
+  HOSTS=""
+fi
+
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
   docker run -i -p ${HC_PORT}:3000 \
-	 $PRIVILEGED \
-	 $MOUNTS \
-	 -e SETUP_RUN="ext" \
+         $PRIVILEGED \
+         $MOUNTS \
+         $HOSTS \
+         -e SETUP_RUN="ext" \
          -t "$HC_BASE_LABEL"
 else
   # Regular run
   docker run -i -p ${HC_PORT}:3000 \
-	 $PRIVILEGED \
+         $PRIVILEGED \
          $MOUNTS \
+         $HOSTS \
          -t "$HC_BASE_LABEL"
 fi
