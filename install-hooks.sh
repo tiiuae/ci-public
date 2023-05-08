@@ -14,9 +14,20 @@ if [ ! -f ./githooks/check-commit.sh ]; then
     exit 1
 fi
 
-if [ -e ./.git/hooks/commit-msg ]; then
-    echo "./.git/hooks/commit-msg exists already" >&2
-    exit 1
-fi
+if [ "$1" == "--uninstall" ]; then
+    if [ ! -e ./.git/hooks/commit-msg ]; then
+        echo "./.git/hooks/commit-msg does not exist"
+        exit 1
+    else
+        rm -f ./.git/hooks/commit-msg
+        echo "Check commit hook removed"
+    fi
+else
+    if [ -e ./.git/hooks/commit-msg ]; then
+        echo "./.git/hooks/commit-msg exists already" >&2
+        exit 1
+    fi
 
-ln -s ../../githooks/check-commit.sh ./.git/hooks/commit-msg
+    ln -s ../../githooks/check-commit.sh ./.git/hooks/commit-msg
+    echo "Check commit hook installed"
+fi
