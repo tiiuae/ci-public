@@ -45,23 +45,33 @@ function Exit_message {
 
 set -e
 
-case "${1,,}" in
-check-script)
-    shellcheck "$0"
-    bashate -i E006 "$0"
-    echo "Nothing to complain"
-    exit 1
-;;
-""|help|-h|--help)
-    echo "This script is supposed to be called from the git commit-msg hook"
-    echo ""
-    echo "check-commit.sh COMMIT_MSG_FILE      Check commit message"
-    echo "check-commit.sh check-script         Run shellcheck and bashate on the script itself"
-    echo "check-commit.sh [help|-h|--help]     Show this help"
-    echo ""
-    exit 1
-;;
-esac
+MATCH=1
+while [ "$MATCH" -eq 1 ]; do
+    case "${1,,}" in
+    check-script)
+        shellcheck "$0"
+        bashate -i E006 "$0"
+        echo "Nothing to complain"
+        exit 1
+    ;;
+    ""|help|-h|--help)
+        echo "This script is supposed to be called from the git commit-msg hook (or check-commits.sh)"
+        echo ""
+        echo "check-commit.sh [--noninteractive] COMMIT_MSG_FILE      Check commit message (noninteractively if specified)"
+        echo "check-commit.sh check-script                            Run shellcheck and bashate on the script itself"
+        echo "check-commit.sh [help|-h|--help]                        Show this help"
+        echo ""
+        exit 1
+    ;;
+    --noninteractive)
+        NONINTERACTIVE=1
+        shift
+    ;;
+    *)
+        MATCH=0
+    ;;
+    esac
+done
 
 DEST="$1"
 
@@ -93,7 +103,9 @@ BODYLINELEN="$(grep -v -e "^[[:blank:]]*#" -e "^Signed-off-by:" "$DEST" | tail -
 FAILED=
 WARNED=
 
-echo ""
+if [ -z "$NONINTERACTIVE" ]; then
+    echo ""
+fi
 
 if [ -z "$SUBJECT" ]; then
     echo "ERROR: Subject line is empty"
@@ -143,7 +155,12 @@ if printf "%s" "$SUBJECT" | grep -q -e '\(^.*\?:[[:blank:]]*[a-z].*$\|^[a-z][^:]
 fi
 
 if [ -n "$FAILED" ]; then
-    Exit_message
+    if [ -z "$NONINTERACTIVE" ]; then
+        Exit_message
+    else
+        echo "Commit message check FAILED"
+        exit 2
+    fi
 fi
 
 # Grab list of Jira-Ids given
@@ -190,25 +207,30 @@ sed -i -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$DEST"
 } >> "$DEST"
 
 if [ -n "$WARNED" ]; then
-    STR=
-    while [ -z "$STR" ]; do
-        echo -e "\n${SUBJECT}\n"
-        echo -n "Are you sure you want to continue with this? (Y/N): "
-        read -r STR < /dev/tty
-        case "$STR" in
-        y|Y)
-            echo "Commit message accepted with warnings"
-            exit 0
-        ;;
-        n|N)
-            echo "Aborted"
-            Exit_message
-        ;;
-        *)
-            STR=
-        ;;
-        esac
-    done
+    if [ -z "$NONINTERACTIVE" ]; then
+        STR=
+        while [ -z "$STR" ]; do
+            echo -e "\n${SUBJECT}\n"
+            echo -n "Are you sure you want to continue with this? (Y/N): "
+            read -r STR < /dev/tty
+            case "$STR" in
+            y|Y)
+                echo "Commit message accepted with warnings"
+                exit 0
+            ;;
+            n|N)
+                echo "Aborted"
+                Exit_message
+            ;;
+            *)
+                STR=
+            ;;
+            esac
+        done
+    else
+        echo "Commit message check with WARNINGS"
+        exit 1
+    fi
 fi
 
 echo "Commit message seems OK"
