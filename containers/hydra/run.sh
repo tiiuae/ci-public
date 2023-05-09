@@ -5,6 +5,8 @@
 
 # Normal container run - not the first run that does setup work instead.
 
+/setup/schedule.sh &
+
 pg_ctl start -D /home/hydra/db
 
 # GC_DONT_GC is needed for hydra-evaluator to work around
