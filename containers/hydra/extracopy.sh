@@ -123,7 +123,7 @@ if [ -f /home/hydra/upload_ip.txt ] && [ -f /home/hydra/.ssh/key ] &&
 
     if [ -f /home/hydra/webserver_ip.txt ] && [ -f /setup/postbuildsrv.txt ] ; then
       echo "Copying images to web server if any"
-      THISSRV="$(cat /etc/postbuildsrv.txt)"
+      THISSRV="$(cat /setup/postbuildsrv.txt)"
       # Copy images to webserver (webcopy.sh only acts on defined images)
       while IFS= read -r f; do
         if [ -f "$f" ]; then
