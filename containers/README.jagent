@@ -1,0 +1,26 @@
+  Copyright 2023 TII (SSRC) and the Ghaf contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
+
+Custom configuration can be done in confs/jenkins_agent.local
+See confs/jenkins_agent.default for the values that can be adjusted.
+
+To create jenkins agent container:
+./build_jenkins_agent.sh [uid=current uid] [gid=current gid]
+The uid and the gid of the jenkins user inside the container
+should be such that they have write permissions to the external
+persistent store.
+
+External store gets initialized at the first container run.
+Store directory should not exist beforehand.
+./run_jenkins_agent.sh [persistent store=./jagent]
+
+Running the container currently ends to running a shell
+inside the container. One can stop the container simply
+by exiting that shell by 'exit' command.
+
+ ----
+
+For upload to the agent to work, one needs to place public key
+for a connection from control to the cache directory as
+{CACHE}/jenkins/.ssh/authorized_keys
