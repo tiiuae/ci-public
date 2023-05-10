@@ -41,3 +41,15 @@ and the second one is the private key to establish the connection.
 
 Optional third file home/upload_port.txt should contain the
 port to connect to.
+
+ ----
+
+Hydra can upload images to the webserver.
+Currently this needs to be set up by placing files
+home/webserver_ip.txt, home/.ssh/websrv_tftp_key,
+and home/.ssh/websrv_trigger_key within the persistent storage.
+First one should have one line telling address of the webserver,
+and two latter ones are the private keys to establish the connection.
+
+Currently webserver upload is supported in setups where also binarycache
+upload has been activated.
