@@ -22,7 +22,17 @@ else
   STORE="./store"
 fi
 
-SRV="$2"
+case "$2" in
+"")
+  SRV="${HC_SRV_MOUNT}"
+;;
+"off")
+  SRV=""
+;;
+*)
+  SRV="${2}"
+;;
+esac
 
 if [ "$3" = "true" ] ; then
   CONTAINER_DEBUG="true"
