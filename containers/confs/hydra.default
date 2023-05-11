@@ -22,6 +22,12 @@ HC_REMOTE_BUILDERS=no
 # Currently can't contain multiple entries.
 #HC_CUSTOM_HOSTS="hostname:ip"
 
+# Host system directory to mount as /srv inside container
+# Empty to not mount /srv at all.
+# One can override this with ./run_hydra.sh command line parameters.
+#   - When one does, 'off' is a special value to disable mount enabled in conf
+HC_SRV_MOUNT=""
+
 if [ -f confs/hydra.local ] ; then
   # Possible overrides
   . confs/hydra.local
