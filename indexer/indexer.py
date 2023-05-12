@@ -9,9 +9,9 @@ import json
 import datetime
 import os
 import glob
+import re
 
-filesdir = "/files"
-webifydir = "/webify"
+domain=".vedenemo.dev"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
 sbomfiles = "sbom.*"
@@ -23,16 +23,16 @@ webifyprefix = ""
 debug = 0
 
 def help(argv):
-    print(f"Usage: {argv[0]} IMGPFIX RPTPFIX BUILDDIR")
+    print(f"Usage: {argv[0]} IMGPFIX WEBPFIX BUILDDIR")
     print(f"")
-    print(f"   IMGPFIX = Additional prefix between images dir and {filesdir}")
-    print(f"   RPTPFIX = Additional prefix between build reports dir and {filesdir}")
+    print(f"   IMGPFIX = Image dir prefix")
+    print(f"   WEBPFIX = Webify prefix")
     print(f"  BUILDDIR = build directory")
     print(f"")
     print(f"makes an index file with all the build information in the build dir")
     print(f"Last part (basename) of the build dir needs to be the Build ID of the build being handled")
     print(f"")
-    print(f"Example: {argv[0]} images/hydra/nuc build_reports/hydra ./1234")
+    print(f"Example: {argv[0]} /files/images /webify/build_reports ./1234")
     print(f"")
 
 
@@ -96,7 +96,10 @@ def time_stamp(tim, _):
 # ------------------------------------------------------------------------
 def postbuild_link(out, _):
     o = out.removeprefix("/nix/store/")
-    return f'<A href="{imageprefix}/{o}">{out}</A>'
+    if imageprefix != None:
+        return f'<A href="{imageprefix}/{o}">{out}</A>'
+    else:
+        return str(out)
 
 
 # ------------------------------------------------------------------------
@@ -112,6 +115,7 @@ def inputs(inp, _):
     return il
 
 
+# ------------------------------------------------------------------------
 def get_reports(fglob: str, webifypfx: str=None):
     files = glob.glob(fglob)
     if debug:
@@ -166,20 +170,20 @@ def main(argv: list[str]):
     global debug
     global imageprefix
     global webifyprefix
+    global domain
 
     # Set debug if set in environment
     debug = convert_int(os.getenv("INDEXER_DEBUG"))
+
+    # Allow override of domain
+    domain = os.getenv("INDEXER_DOMAIN", domain)
 
     if len(argv) != 4:
         help(argv)
         return
 
-    imageprefix = filesdir + "/" + argv[1].removeprefix("/").removesuffix("/")
-    webifyprefix = webifydir + "/" + argv[2].removeprefix("/").removesuffix("/")
-
-    if debug:
-        print(f"imageprefix = {imageprefix}")
-        print(f"webifyprefix = {webifyprefix}")
+    imageprefix = "/" + argv[1].removeprefix("/").removesuffix("/")
+    webifyprefix = "/" + argv[2].removeprefix("/").removesuffix("/")
 
     dir = os.path.normpath(argv[3])
     # Path should end in directory which has build ID as it's name
@@ -204,6 +208,35 @@ def main(argv: list[str]):
     except FileNotFoundError:
         print(f"Could not find {bjson}", file=sys.stderr)
         exit(1)
+
+    server = data.get("Server")
+    if server == None:
+        print("No server indicated in json file", file=sys.stderr)
+        exit(1)
+
+    server = server.removesuffix(domain)
+
+    imageprefix += "/" + server
+    webifyprefix += "/" + server
+
+    plink = data.get("Postbuild link")
+    if plink == None:
+        print("No postbuild link", file=sys.stderr)
+        # This will disable the image link creation
+        imageprefix = None
+    else:
+        if re.compile("^\/nix\/store\/[a-z0-9]{32}-.*-nixos.img$").fullmatch(plink):
+            # Remove "/nix/store/<hash>-" prefix
+            plink = plink[44:]
+            plink = plink.removesuffix("-nixos.img")
+            imageprefix += "/" + plink
+        else:
+            # This will disable the image link creation
+            imageprefix = None
+
+    if debug:
+        print(f"imageprefix = {imageprefix}")
+        print(f"webifyprefix = {webifyprefix}")
 
     env = jinja2.Environment(loader=jinja2.PackageLoader('indexer', 'templates'), autoescape=False) #jinja2.select_autoescape(['html']))
     template = env.get_template("index_template.html")
