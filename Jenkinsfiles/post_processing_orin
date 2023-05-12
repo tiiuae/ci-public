@@ -7,7 +7,7 @@ buildResults = [:]
 vulnixJob = 'nixOS/Supply_chain_security/vulnix'
 sbomJob = 'nixOS/Supply_chain_security/sbomnix'
 vulnsdiffJob = 'nixOS/Supply_chain_security/vulnsdiff'
-// testJob = 'nixOS/Testing/Orin_arm/orin_arm_test_set'
+testJob = 'nixOS/Testing/Orin_arm/orin_arm_test_set'
 
 pipeline {
     agent {label 'tc-agent02'}
@@ -81,28 +81,28 @@ pipeline {
                 }
             }
         }
-        // stage('Orin Tests') {
-        //     steps {
-        //         script {
-        //             build = build(
-        //                 job: "${testJob}", propagate: false,
-        //                 parameters: [
-        //                   [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-        //                   [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-        //                   [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
-        //                 ]
-        //             )
-        //             if(build.result == "SUCCESS") {
-        //               buildResults."orin" = "SUCCESS"
-        //               echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
-        //             } else {
-        //               catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-        //                             error("Orin testset build failed")
-        //               }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Orin Tests') {
+            steps {
+                script {
+                    build = build(
+                        job: "${testJob}", propagate: false,
+                        parameters: [
+                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                        ]
+                    )
+                    if(build.result == "SUCCESS") {
+                      buildResults."orin" = "SUCCESS"
+                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                    } else {
+                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
+                                    error("Orin testset build failed")
+                      }
+                    }
+                }
+            }
+        }
         stage('Add post processing timestamp to .json file and create index.html') {
             steps {
               script {
