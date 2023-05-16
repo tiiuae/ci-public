@@ -30,7 +30,15 @@ infosuffix = "-build-info.json"
 # code = optional exit code
 # ------------------------------------------------------------------------
 def perror(txt, code=1):
-    print(txt, file=sys.stderr)
+    if txt != None:
+        print(txt, file=sys.stderr)
+
+    messagescript = os.getenv("POSTBUILD_MSGSCRIPT")
+    if messagescript != None:
+        ret = os.system(messagescript)
+        if ret != 0:
+            print(f"Message script return code: {ret}", file=sys.stderr)
+
     sys.exit(code)
 
 # ------------------------------------------------------------------------
@@ -142,6 +150,8 @@ def main(argv: list[str]):
         # Print the build-info nix store path so that it can be scraped
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
+
+    perror(None, 0)
 
 
 # ------------------------------------------------------------------------
