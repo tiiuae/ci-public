@@ -8,7 +8,7 @@ FROM nixos/nix
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
      populate.sh packages.lst upload.sh /setup/
-COPY hydra_conf.sh postbuild.py extracopy.sh /setup/
+COPY hydra_conf.sh postbuild.py extracopy.sh messager.py slack_config /setup/
 
 RUN chmod +x /setup/*.sh
 
@@ -36,6 +36,7 @@ RUN rm -Rf /root/.cache
 ARG CONTAINER_DEBUG=false
 RUN touch /etc/container-debug-${CONTAINER_DEBUG}
 
+RUN chmod +x /setup/messager.py
 USER hydra
 
 WORKDIR /launch

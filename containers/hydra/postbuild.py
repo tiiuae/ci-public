@@ -94,9 +94,19 @@ def main(argv: list[str]):
     # Load build information
     with open(jsonfn) as jsonf:
         binfo = json.load(jsonf)
+   
+    buildjob=str(binfo['job']) 
+    buildstatus=str(binfo['buildStatus']) 
+    buildnumber=str(binfo['build']) 
+    buildproject=str(binfo['project'])
 
     # Check status of the build, we are interested only in finished builds
     if binfo['buildStatus'] != 0 or binfo['finished'] != True or binfo['event'] != "buildFinished":
+        themessage="\""+"Broken build:"+buildjob+"  Status:"+buildstatus+"  BuildNumber:"+buildnumber+"  Project:"+buildproject+"\"" 
+        command = "/setup/messager.py -m "+themessage+"-f \"/setup/slack_config\"" 
+        res = os.system(command)
+        if res != 0:
+            print(f"Message script return code: {res}", file=sys.stderr)
         perror("Unexpected build status")
 
     # Find output path
@@ -143,6 +153,11 @@ def main(argv: list[str]):
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
+        themessage=nixbuildinfo
+        command = "/setup/messager.py -m "+themessage+"-f \"/setup/slack_config\"" 
+        res = os.system(command)
+        if res != 0:
+            print(f"Message script return code: {res}", file=sys.stderr)
 
 # ------------------------------------------------------------------------
 # Run main when executed from command line

@@ -2,17 +2,19 @@
 #!nix-shell -i python3 -p "python3.withPackages(ps: [ ps.slackclient ])"
 #
 #
-
-
+# This Slack messager needs 1) Slack authorization app token 2) slack channel to be messaged in a configuration file (in this order)
+# When Slack app is being created, the authorization token is given by the system. Please see Slack info how to create Slack apps.
+#
+# DO NOT STORE SLACK CONFIGURATION FILE TO GITHUB EVER. IT INCLUDES ACCESST TOKEN. ADD IT MANUALLY TO /containers/hydra directory FOR DOCKER
+# IMAGE BUILDING. 
+#
 import os,sys,argparse
 import slack   
 from slack import WebClient
 from slack.errors import SlackApiError
 
 
-
 __version__ = u"0.73300"
-
 MESSAGETEXT=u""
   
 
@@ -21,9 +23,8 @@ parser = argparse.ArgumentParser(description="Send message to Slack channel (as 
     
  epilog="""
     
-    EXAMPLE:
-    
-    SLACKTOKEN env variable assumed to include Slack app token
+    Configuration file content: line0: slack app token, line1:slack channel to be messaged
+    Keep token (and configuration file) in safe. Do not store to git.
     
     python3 messager.py  -m "TEXT FOR SLACKCHANNEL" -f CONFIGURATION FILE"""  
     
@@ -41,21 +42,16 @@ if (SLACKMESSAGE=='' or  SLACKCONFIGURATIONFILE=='' ):
         print("\n---> MISSING ARGUMENTS!!\n ")
         parser.print_help()
         sys.exit(2)
-
-print (SLACKCONFIGURATIONFILE)        
+     
 file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
 if (file_exists):
 
-        print ("slack_config file exists. Going to slack",file=sys.stderr)
+        print ("Slack configuration file exists. Going to slack",file=sys.stderr)
         file = open(SLACKCONFIGURATIONFILE, "r")
         config_array=file.read().split()
         slackchannel=str(config_array[1])
         slacktoken=str(config_array[0])
-        #print ("content0:"+slacktoken,file=sys.stderr)
-        #print ("content1:"+slackchannel,file=sys.stderr)
-        #print (SLACKMESSAGE,file=sys.stderr)
-        
         try:
             client = slack.WebClient(token=slacktoken)
             client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
@@ -66,4 +62,4 @@ if (file_exists):
     
         
 else:
-        print ("No slack_config file found. Doing nothing",file=sys.stderr)    
+        print ("No Slack configuration file found. Doing nothing",file=sys.stderr)    
