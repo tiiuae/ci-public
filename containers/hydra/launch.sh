@@ -11,6 +11,7 @@ if [ "$SETUP_RUN" = "1" ] ; then
   cp -R /nix/var /nix/outside
   chown -R :nixbld /nix/outside/store
   cp -R /home/hydra/* /nix/outside_home/
+  cp /setup/postbuild.py /nix/outside_home/
 elif [ "$SETUP_RUN" = "2" ] ; then
   # Run rest of the setup scripts
   /setup/postgres.sh

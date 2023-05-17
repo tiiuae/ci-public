@@ -10,7 +10,7 @@
 (
   echo "<runcommand>"
   echo "  job = *:*:*"
-  echo "  command = POSTBUILD_SERVER=${1} python3 /setup/postbuild.py"
+  echo "  command = POSTBUILD_SERVER=${1} python3 /home/hydra/postbuild.py"
   echo "</runcommand>"
   echo "max_output_size = 12000000000;"
   echo "base_uri = ${2}"
