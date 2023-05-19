@@ -2,13 +2,18 @@
 #!nix-shell -i python3 -p "python3.withPackages(ps: [ ps.slackclient ])"
 #
 #
-# This Slack messager needs 1) Slack authorization app token 2) slack channel to be messaged in a configuration file (in this order)
-# When Slack app is being created, the authorization token is given by the system. Please see Slack info how to create Slack apps.
+# This Slack messager needs 1) Slack authorization app token 2) slack channel to be messaged in a configuration file containers/hydra/slack_config
+# If file does not exists, no messaging.
+# When Slack app is being created, the authorization token is given by the system. Please see Slack docs how to create Slack apps and migrate to Slack space/channel
 #
-# DO NOT STORE SLACK CONFIGURATION FILE TO GITHUB EVER. IT INCLUDES ACCESST TOKEN. ADD IT MANUALLY TO /containers/hydra directory FOR DOCKER
-# IMAGE BUILDING. 
+#
+# DO NOT STORE SLACK CONFIGURATION FILE TO GITHUB /ETC).IT INCLUDES ACCESST TOKEN. ADD IT MANUALLY TO /containers/hydra directory FOR DOCKER
+# IMAGE BUILDING PHASE.
+#
+# This file can be modififed to support other messaging services
 #
 import os,sys,argparse
+import json
 import slack   
 from slack import WebClient
 from slack.errors import SlackApiError
@@ -47,11 +52,31 @@ file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
 if (file_exists):
 
-        print ("Slack configuration file exists. Going to slack",file=sys.stderr)
+        print ("Slack configuration file exists. Going to do the messaging",file=sys.stderr)
         file = open(SLACKCONFIGURATIONFILE, "r")
         config_array=file.read().split()
         slackchannel=str(config_array[1])
         slacktoken=str(config_array[0])
+        
+        hydraserver = os.getenv("POSTBUILD_SERVER")
+        if hydraserver == None:
+            print ("No Hydra server defined",file=sys.stderr)  
+        else:
+            SLACKMESSAGE=SLACKMESSAGE + "\nHydra server:"+hydraserver
+            
+        hydradata= os.getenv("HYDRA_JSON")
+        if hydradata == None:
+            print ("No Hydra JSON defined",file=sys.stderr)    
+        else:
+            with open(hydradata) as jsonf:
+                binfo = json.load(jsonf)
+                #prettyinfo=json.dumps(binfo,indent=3)
+                buildjob=str(binfo['job']) 
+                buildstatus=str(binfo['buildStatus']) 
+                buildnumber=str(binfo['build']) 
+                buildproject=str(binfo['project'])
+                SLACKMESSAGE=SLACKMESSAGE+"\nHydra build:"+str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:"+buildnumber+"\nProject:"+buildproject
+                
         try:
             client = slack.WebClient(token=slacktoken)
             client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
