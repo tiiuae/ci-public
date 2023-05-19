@@ -30,7 +30,15 @@ infosuffix = "-build-info.json"
 # code = optional exit code
 # ------------------------------------------------------------------------
 def perror(txt, code=1):
-    print(txt, file=sys.stderr)
+    if txt != None:
+        print(txt, file=sys.stderr)
+
+    messagescript = os.getenv("POSTBUILD_MSGSCRIPT")
+    if messagescript != None:
+        ret = os.system(messagescript)
+        if ret != 0:
+            print(f"Message script return code: {ret}", file=sys.stderr)
+
     sys.exit(code)
 
 # ------------------------------------------------------------------------
@@ -155,12 +163,16 @@ def main(argv: list[str]):
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
+
         # message succesful build info and data
         themessage=" OK build !!! " 
         command = "/setup/messager.py -m \""+themessage+"\" -f \"/setup/slack_config\"" 
         res = os.system(command)
         if res != 0:
             print(f"Message script return code: {res}", file=sys.stderr)
+
+        perror(None, 0)
+
 
 
         

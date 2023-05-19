@@ -65,6 +65,19 @@ pipeline {
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
                             }
+                        } else if ("${buildData['Job']}".contains("generic-x86")) {
+                            //Trigger generic-x86_64 post processing pipeline
+                            try {
+                                build job: "${nucProcessingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                                ]
+                            }catch (err) {
+                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            }
                         } else if ("${buildData['Job']}".contains("nuc")) {
                             //Trigger NUC post processing pipeline
                             try {

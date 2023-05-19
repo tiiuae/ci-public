@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-License-Identifier: Apache-2.0
+
+# Jenkins agent container configuration, defaults & applying overrides
+
+JAC_BASE_LABEL="jenkins-agent"
+JAC_SSH_PORT=4005
+
+#JAC_CHANNEL="22.05"
+
+if [ -f confs/jenkins_agent.local ] ; then
+  # Possible overrides
+  . confs/jenkins_agent.local
+fi
