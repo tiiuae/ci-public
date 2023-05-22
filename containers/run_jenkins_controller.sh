@@ -30,19 +30,32 @@ if ! [ -d "$JCCACHE" ] ; then
 fi
 
 if ! [ -d "${JCCACHE}" ] ; then
-  if ! mkdir -p "${JCCACHE}/nix" ||
-     ! mkdir -p "${JCCACHE}/jenkins" ; then
+  if ! mkdir -p "${JCCACHE}/nix" ; then
     echo "Failed to create \"$JCCACHE\"" >&2
     exit 1
   fi
-fi
 
-# Make sure we have absolute path
-JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
+  # Make sure we have absolute path
+  JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
+
+  if ! ( cd "${JCCACHE}" || exit 1
+    git clone -n --depth=1 --filter=tree:0 \
+      https://github.com/tiiuae/ci-public home
+    cd home || exit 1
+    git sparse-checkout set --no-cone jenkins
+    git checkout
+  ) ; then
+    echo "Failed to setup Jenkins config clone" >&2
+    exit 1
+  fi
+else
+  # Make sure we have absolute path
+  JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
+fi
 
 MOUNTS="\
  --mount type=bind,source=${JCCACHE}/nix,target=/nix \
- --mount type=bind,source=${JCCACHE}/jenkins,target=/jenkins \
+ --mount type=bind,source=${JCCACHE}/home/jenkins,target=/jenkins \
 "
 
 # Regular run
