@@ -12,6 +12,7 @@ COPY hydra_conf.sh postbuild.py extracopy.sh webcopy.sh schedule.sh messager.py 
 
 
 RUN chmod +x /setup/*.sh
+RUN chmod +x /setup/messager.py
 
 ARG CHANNEL
 RUN /setup/channel.sh "$CHANNEL"
@@ -37,7 +38,7 @@ RUN rm -Rf /root/.cache
 ARG CONTAINER_DEBUG=false
 RUN touch /etc/container-debug-${CONTAINER_DEBUG}
 
-RUN chmod +x /setup/messager.py
+
 USER hydra
 
 WORKDIR /launch

@@ -1,17 +1,16 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i python3 -p "python3.withPackages(ps: [ ps.slackclient ])"
 #
+# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-License-Identifier: Apache-2.0
+# ------------------------------------------------------------------------
+# Hydra Slack messaging script
 #
-# This Slack messager needs 1) Slack authorization app token 2) slack channel to be messaged in a configuration file containers/hydra/slack_config
-# If file does not exists, no messaging.
-# When Slack app is being created, the authorization token is given by the system. Please see Slack docs how to create Slack apps and migrate to Slack space/channel
-#
-#
-# DO NOT STORE SLACK CONFIGURATION FILE TO GITHUB /ETC).IT INCLUDES ACCESST TOKEN. ADD IT MANUALLY TO /containers/hydra directory FOR DOCKER
-# IMAGE BUILDING PHASE.
-#
-# This file can be modififed to support other messaging services
-#
+# Prints given messaage to configured Slack channel with major build 
+# information data
+# 
+# ------------------------------------------------------------------------
+
 import os,sys,argparse
 import json
 import slack   
