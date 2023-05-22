@@ -35,10 +35,10 @@ if ! [ -d "${JCCACHE}" ] ; then
     echo "Failed to create \"$JCCACHE\"" >&2
     exit 1
   fi
-
-  # Make sure we have absolute path
-  JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
 fi
+
+# Make sure we have absolute path
+JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
 
 MOUNTS="\
  --mount type=bind,source=${JCCACHE}/nix,target=/nix \
