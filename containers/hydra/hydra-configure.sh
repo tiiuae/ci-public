@@ -26,11 +26,11 @@ export HYDRACTL_USERNAME="automation"
 
 # TODO: All this should come from a configuration layer, and not be
 #       hardcoded guesses of what is wanted
-python3 "$HYDRACTL" "$SERVER" AP -i ghaf -D ghaf
+python3 "$HYDRACTL" "$SERVER" AP -p ghaf -D ghaf
 
 python3 "$HYDRACTL" \
         "$SERVER" AJ \
-        -p ghaf -i ghaf -D ghaf \
+        -p ghaf -j ghaf -D ghaf \
         -t flake -f git+https://github.com/tiiuae/ghaf/
 
 python3 "$HYDRACTL" "$SERVER" AP -i ghaf-23-05 -D "Ghaf project 23.05"
