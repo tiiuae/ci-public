@@ -285,6 +285,7 @@ def main(argv: list[str]):
         print(resfils)
 
     tr = []
+    success = True
     for rf in resfils:
         with open(rf, "r") as file:
             while True:
@@ -295,6 +296,10 @@ def main(argv: list[str]):
                 # It is assumed here that reports are from robot framework
                 # And this is why we dig up the name like this
                 if line.startswith('window.output["stats"] = [[{"'):
+                    try:
+                        line.index('"fail":0,"label":"All Tests"')
+                    except ValueError:
+                        success = False
                     line = line.split('"name":"', maxsplit = 1)[1]
                     line = line.split('","', maxsplit = 1)[0]
                     break
@@ -328,7 +333,7 @@ def main(argv: list[str]):
 
     # Render index.html
     with open("index.html","w") as file:
-            print(template.render(title=f"{binfo['Server']} Build {binfo['Build ID']} Results", result=result), file=file)
+            print(template.render(title=f"{binfo['Server']} Build {binfo['Build ID']} Results", result=result, success=success), file=file)
 
 
 # ------------------------------------------------------------------------
