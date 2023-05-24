@@ -2,14 +2,29 @@
 // SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 // SPDX-License-Identifier: Apache-2.0
 
-resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/${params.server}"
-imagesPath = '/home/tc-agent02/Jenkins-agent/workspace/images/'
-nucProcessingJob = 'nixOS/post_processing_nuc'
-orinProcessingJob = 'nixOS/post_processing_orin'
+resultsPath = ''
+nucProcessingJob = ''
+orinProcessingJob = ''
+line = ''
 
 pipeline {
     agent {label 'tc-agent02'}
     stages {
+        stage('Set variables') {
+            steps {
+                script {
+                    if (params.development) {
+                         resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/development/${params.server}"
+                    } else {
+                         resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/${params.server}"
+                    }
+                    def splitted = "${JOB_NAME}".split('/')
+                    line = "${splitted[0]}"
+                    nucProcessingJob = "${line}/post_processing_nuc"
+                    orinProcessingJob = "${line}/post_processing_orin"
+                }
+             }
+        }
         stage('Remove old working list') {
             steps {
                 script {
@@ -35,6 +50,7 @@ pipeline {
         stage('Post Processing') {
             steps {
                 script {
+                    println("LINE::: ${line}")
                     if (!fileExists('wlist.txt')) {
                         println("Nothing new to process!")
                         return
@@ -60,37 +76,39 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
+                                    [$class: 'StringParameterValue', name: 'line', value: "${line}"],
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
                             }
-                        } else if ("${buildData['Job']}".contains("generic-x86")) {
-                            //Trigger generic-x86_64 post processing pipeline
-                            try {
-                                build job: "${nucProcessingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
-                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
-                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
-                                ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
-                            }
-                        } else if ("${buildData['Job']}".contains("nuc")) {
-                            //Trigger NUC post processing pipeline
-                            try {
-                                build job: "${nucProcessingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
-                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
-                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
-                                ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
-                            }
+                        // } else if ("${buildData['Job']}".contains("generic-x86")) {
+                        //     //Trigger generic-x86_64 post processing pipeline
+                        //     try {
+                        //         build job: "${nucProcessingJob}", parameters: [
+                        //             [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                        //             [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                        //             [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                        //             [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                        //             [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                        //         ]
+                        //     }catch (err) {
+                        //         println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                        //     }
+                        // } else if ("${buildData['Job']}".contains("nuc")) {
+                        //     //Trigger NUC post processing pipeliner
+                        //     try {
+                        //         build job: "${nucProcessingJob}", parameters: [
+                        //             [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                        //             [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                        //             [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                        //             [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                        //             [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                        //         ]
+                        //     }catch (err) {
+                        //         println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                        //     }
                         } else {
                             println("Build was not from wanted job")
                         }
