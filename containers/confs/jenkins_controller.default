@@ -6,6 +6,11 @@
 JCC_PORT=8081
 JCC_BASE_LABEL="jenkins-control"
 
+# Repo and branch to checkout jenkins configuration from.
+# If either is empty, do not checkout anything.
+JCC_REPO="https://github.com/tiiuae/ci-public"
+JCC_BRANCH="main"
+
 if [ -f confs/jenkins_controller.local ] ; then
   # Possible overrides
   . confs/jenkins_controller.local

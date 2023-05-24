@@ -15,9 +15,6 @@ External store gets initialized at the first container run.
 Store directory should not exist beforehand.
 ./run_jenkins_controller.sh [persistent store=./jcontrol]
 
-On the first run, initial password for configuring jenkins
-gets printed.
-
 Running the container currently ends to running a shell
 inside the container. One can stop the container simply
 by exiting that shell by 'exit' command.
@@ -25,3 +22,12 @@ by exiting that shell by 'exit' command.
 While the container is running, jenkins should be visible
 on the host by http://localhost:8081
 (or what ever port is defined in the confs/jenkins_controller.local)
+
+By default jenkins configuration gets cloned to the persistent store
+from ci-public git repo main branch. These can be changed
+from jenkins_controller.local
+From the outside of the container, this git clone is accessible
+in jcontrol/home/jenkins.
+
+If git repo is not cloned at all, and thus jenkins is not configured,
+initial password for configuring jenkins gets printed on first run.
