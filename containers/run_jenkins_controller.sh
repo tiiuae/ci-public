@@ -38,15 +38,22 @@ if ! [ -d "${JCCACHE}" ] ; then
   # Make sure we have absolute path
   JCCACHE="$(cd "${JCCACHE}" || exit 1 ; pwd)"
 
-  if ! ( cd "${JCCACHE}" || exit 1
-    git clone -n --depth=1 --filter=tree:0 \
-      https://github.com/tiiuae/ci-public home
-    cd home || exit 1
-    git sparse-checkout set --no-cone jenkins
-    git checkout
-  ) ; then
-    echo "Failed to setup Jenkins config clone" >&2
-    exit 1
+  if [ -n "${JCC_REPO}" ] && [ -n "${JCC_BRANCH}" ] ; then
+    if ! ( cd "${JCCACHE}" || exit 1
+      git clone -n --depth=1 --filter=tree:0 \
+        "${JCC_REPO}" --branch "${JCC_BRANCH}" home
+      cd home || exit 1
+      git sparse-checkout set --no-cone jenkins
+      git checkout
+    ) ; then
+      echo "Failed to setup Jenkins config clone" >&2
+      exit 1
+    fi
+  else
+    if ! mkdir -p "${JCCACHE}/home/jenkins" ; then
+      echo "Failed to create \"${JCCACHE}/home/jenkins\"" >&2
+      exit 1
+    fi
   fi
 else
   # Make sure we have absolute path
@@ -59,6 +66,6 @@ MOUNTS="\
 "
 
 # Regular run
-docker run -i -p ${JCC_PORT}:8080 \
+docker run -i -p "${JCC_PORT}:8080" \
            $MOUNTS \
            -t "$JCC_BASE_LABEL"
