@@ -6,9 +6,17 @@
 # ------------------------------------------------------------------------
 # Hydra Slack messaging script
 #
-# Prints given messaage to configured Slack channel with major build 
+# Prints given messaage to configured Slack channel with major hydra build 
 # information data
 # 
+# Slack configuration file format:
+# line1: Slack auth secret token (given when Slack application created) 
+# line2: Used Slack channel (Slack application must be installed for this channel for usage)
+# 
+# Do not keep this auth file in version control system. Postbuild (user of this script) assumes
+# it is stored to ci-public/containers/hydra/store/home in host side.
+#
+#
 # ------------------------------------------------------------------------
 
 import os,sys,argparse

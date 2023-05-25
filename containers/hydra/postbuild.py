@@ -102,20 +102,16 @@ def main(argv: list[str]):
     # Load build information
     with open(jsonfn) as jsonf:
         binfo = json.load(jsonf)
-   
-    buildjob=str(binfo['job']) 
-    buildstatus=str(binfo['buildStatus']) 
-    buildnumber=str(binfo['build']) 
-    buildproject=str(binfo['project'])
+
 
     # Check status of the build, we are interested only in finished builds
-    # message broken build info and data
+    # message broken build info 
     if binfo['buildStatus'] != 0 or binfo['finished'] != True or binfo['event'] != "buildFinished":
         themessage=" Broken build !!! " 
-        command = "/setup/messager.py -m \""+themessage+"\" -f \"/setup/slack_config\"" 
+        command = "/setup/messager.py -m \""+themessage+"\" -f \"/home/hydra/slack_config\""        
         res = os.system(command)
         if res != 0:
-            print(f"Message script return code: {res}", file=sys.stderr)
+            print(f"Error with messaging, script return code: {res}", file=sys.stderr)
         # add log info and stop
         perror("Unexpected build status")
 
@@ -164,12 +160,12 @@ def main(argv: list[str]):
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
 
-        # message succesful build info and data
+        # message succesful build info 
         themessage=" OK build !!! " 
-        command = "/setup/messager.py -m \""+themessage+"\" -f \"/setup/slack_config\"" 
+        command = "/setup/messager.py -m \""+themessage+"\" -f \"/home/hydra/slack_config\"" 
         res = os.system(command)
         if res != 0:
-            print(f"Message script return code: {res}", file=sys.stderr)
+            print(f"Error with messaging, script return code: {res}", file=sys.stderr)
 
         perror(None, 0)
 
