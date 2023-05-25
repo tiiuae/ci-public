@@ -8,9 +8,11 @@ FROM nixos/nix
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
      populate.sh packages.lst upload.sh /setup/
-COPY hydra_conf.sh postbuild.py extracopy.sh webcopy.sh schedule.sh /setup/
+COPY hydra_conf.sh postbuild.py extracopy.sh webcopy.sh schedule.sh messager.py /setup/
+
 
 RUN chmod +x /setup/*.sh
+RUN chmod +x /setup/messager.py
 
 ARG CHANNEL
 RUN /setup/channel.sh "$CHANNEL"
