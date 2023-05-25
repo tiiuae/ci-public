@@ -107,12 +107,6 @@ def main(argv: list[str]):
     # Check status of the build, we are interested only in finished builds
     # message broken build info 
     if binfo['buildStatus'] != 0 or binfo['finished'] != True or binfo['event'] != "buildFinished":
-        themessage=" Broken build !!! " 
-        command = "/setup/messager.py -m \""+themessage+"\" -f \"/home/hydra/slack_config\""        
-        res = os.system(command)
-        if res != 0:
-            print(f"Error with messaging, script return code: {res}", file=sys.stderr)
-        # add log info and stop
         perror("Unexpected build status")
 
     # Find output path
@@ -158,14 +152,6 @@ def main(argv: list[str]):
         # Print the build-info nix store path so that it can be scraped
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
-
-
-        # message succesful build info 
-        themessage=" OK build !!! " 
-        command = "/setup/messager.py -m \""+themessage+"\" -f \"/home/hydra/slack_config\"" 
-        res = os.system(command)
-        if res != 0:
-            print(f"Error with messaging, script return code: {res}", file=sys.stderr)
 
         perror(None, 0)
 

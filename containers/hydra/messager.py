@@ -59,6 +59,8 @@ file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
 if (file_exists):
 
+        SLACKMESSAGE="" # forming first message part here, not using passed argument
+  
         print ("Slack configuration file exists. Going to do the messaging",file=sys.stderr)
         file = open(SLACKCONFIGURATIONFILE, "r")
         config_array=file.read().split()
@@ -67,9 +69,10 @@ if (file_exists):
         
         hydraserver = os.getenv("POSTBUILD_SERVER")
         if hydraserver == None:
-            print ("No Hydra server defined",file=sys.stderr)  
+            print ("No Hydra server defined",file=sys.stderr) 
+            HYDRASERVER="" 
         else:
-            SLACKMESSAGE=SLACKMESSAGE + "\nHydra server:"+hydraserver
+            HYDRASERVER="\nHydra server:"+hydraserver
             
         hydradata= os.getenv("HYDRA_JSON")
         if hydradata == None:
@@ -82,7 +85,14 @@ if (file_exists):
                 buildstatus=str(binfo['buildStatus']) 
                 buildnumber=str(binfo['build']) 
                 buildproject=str(binfo['project'])
-                SLACKMESSAGE=SLACKMESSAGE+"\nHydra build:"+str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:"+buildnumber+"\nProject:"+buildproject
+                
+                if (int(buildstatus)==0):
+                    SLACKMESSAGE="OK Build !!!"
+                    
+                elif (int(buildstatus)==9):
+                    SLACKMESSAGE="Broken Build !!!"
+                
+                SLACKMESSAGE=SLACKMESSAGE+HYDRASERVER+"\nHydra build:"+str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:"+buildnumber+"\nProject:"+buildproject
                 
         try:
             client = slack.WebClient(token=slacktoken)
