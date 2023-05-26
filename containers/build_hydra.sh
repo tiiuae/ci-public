@@ -39,6 +39,7 @@ fi
 
 docker build --build-arg HYDRA_UID="$HYDRA_UID" \
              --build-arg HYDRA_GID="$HYDRA_GID" \
+             --build-arg CHANNEL="$HC_CHANNEL" \
              --build-arg HYDRA_REMOTE_BUILDERS="$HC_REMOTE_BUILDERS" \
              --build-arg PB_SRV="$HC_PB_SRV" \
              --build-arg HYDRA_URL="$HYDRA_URL" \
