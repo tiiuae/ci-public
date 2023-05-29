@@ -87,7 +87,8 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"]
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
