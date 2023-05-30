@@ -12,6 +12,9 @@ HC_BASE_LABEL="hydra"
 # Server identifier
 HC_PB_SRV="hydra"
 
+# Path to the store directory. Can be relative to current directory.
+HC_STORE_PATH="./store"
+
 # URL of the Hydra instance
 HYDRA_URL="localhost:${HC_PORT}"
 
