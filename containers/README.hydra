@@ -53,3 +53,19 @@ and two latter ones are the private keys to establish the connection.
 
 Currently webserver upload is supported in setups where also binarycache
 upload has been activated.
+
+----
+
+Hydra supports messaging to Slack channel. One needs first to create new Slack app
+with write rights (https://api.slack.com/apps) and storing given auth token to safe
+private place. Then Slack app must be installed to Slack workspace and to channel to
+be used for build information messages.
+
+Configuration file slack_conf need to be created and stored manually to /store/home.
+File content need to be the following:
+line1: Secret Slack auth token
+line2: Name of the Slack channel to be messaged
+
+Messager.py implements actual message sending and it is defined to be the current messaging
+tool in postbuild.py (Used out Docker image from /home/store)
+

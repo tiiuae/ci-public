@@ -33,7 +33,7 @@ def perror(txt, code=1):
     if txt != None:
         print(txt, file=sys.stderr)
 
-    messagescript = os.getenv("POSTBUILD_MSGSCRIPT")
+    messagescript="/home/hydra/messager.py -m nonews -f \"/home/hydra/slack_config\""
     if messagescript != None:
         ret = os.system(messagescript)
         if ret != 0:
