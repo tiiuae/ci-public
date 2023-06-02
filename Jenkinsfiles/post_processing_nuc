@@ -7,6 +7,7 @@ buildResults = [:]
 vulnixJob = ''
 sbomJob = ''
 vulnsdiffJob = ''
+provenanceJob = ''
 testJob = ''
 level = ''
 
@@ -20,6 +21,7 @@ pipeline {
                     vulnixJob = "${splitted[0]}/Supply_chain_security/vulnix"
                     sbomJob = "${splitted[0]}/Supply_chain_security/sbomnix"
                     vulnsdiffJob = "${splitted[0]}/Supply_chain_security/vulnsdiff"
+                    provenanceJob = "${splitted[0]}/Supply_chain_security/provenance"
                     testJob = "${splitted[0]}/Testing/NUC_x86/nuc_x86_test_set"
                     level = "${splitted[0]}"
                     currentBuild.description = "${params.server} Orin BuildID: ${params.buildID}"
@@ -113,6 +115,29 @@ pipeline {
                     } else {
                       catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
                                     error("NUC testset build failed")
+                      }
+                    }
+                }
+            }
+        }
+        stage('provenance') {
+            steps {
+                script {
+                    build = build(
+                        job: "${provenanceJob}", propagate: false,
+                        parameters: [
+                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                          [$class: 'StringParameterValue', name: 'builderWorkspace', value: "$WORKSPACE"]
+                        ]
+                    )
+                    if(build.result == "SUCCESS") {
+                      buildResults."provenance" = "SUCCESS"
+                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                    } else {
+                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
+                                    error("provenance build failed")
                       }
                     }
                 }
