@@ -46,7 +46,7 @@ else
   exit 1
 fi
 
-if ! [ -d "$STORE" ] ; then
+if ! [ -d "$STORE" ] && [ "$HC_NONINTERACTIVE" != "on" ] ; then
   echo "\"$STORE\" does not exist. Do you want it created now? (y/n)"
   echo -n "> "
   read -n 1 ANSWER
