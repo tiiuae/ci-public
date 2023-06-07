@@ -2,7 +2,8 @@
 # SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
-# Script for generating SLSA compliant provenance file from hydra postbuild
+
+"""Script for generating SLSA compliant provenance file from hydra postbuild"""
 
 import argparse
 import glob
@@ -12,31 +13,29 @@ import subprocess
 from datetime import datetime
 from typing import Optional
 
+BUILD_TYPE_DOCUMENT = "TODO"
+BUILD_ID_DOCUMENT = "TODO"
 
-# ------------------------------------------------------------------------
-# Run shell command as subprocess and get the stdout as string
-# ------------------------------------------------------------------------
+
 def run_command(cmd: list[str], **kwargs):
-    out, err = subprocess.Popen(
+    """Run shell command as subprocess and get the stdout as string"""
+    with subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         **kwargs,
-    ).communicate()
-    return out.decode().strip()
+    ) as proc:
+        out, _err = proc.communicate()
+        return out.decode().strip()
 
 
-# ------------------------------------------------------------------------
-# Get sha256 hash of nix store item
-# ------------------------------------------------------------------------
 def nix_hash(image: str):
+    """Get sha256 hash of nix store item"""
     return run_command(["nix-hash", "--base32", "--type", "sha256", image])
 
 
-# ------------------------------------------------------------------------
-# Parse the given output store path for built image files
-# and return them as ResourceDescriptors
-# ------------------------------------------------------------------------
 def parse_subjects(output_store_paths: list[str]) -> list[dict]:
+    """Parse the given output store path for built image files
+    and return them as ResourceDescriptors"""
     subjects = []
     for output_store in output_store_paths:
         if os.path.exists(output_store):
@@ -57,15 +56,14 @@ def parse_subjects(output_store_paths: list[str]) -> list[dict]:
     return subjects
 
 
-# ------------------------------------------------------------------------
-# Parse the sbom for dependencies and return them as ResourceDescriptors
-# ------------------------------------------------------------------------
 def resolve_build_dependencies(sbom_path: str | None):
+    """Parse the sbom for dependencie
+    and return them as ResourceDescriptors"""
     if sbom_path is None:
         return []
 
-    with open(sbom_path, "rb") as f:
-        sbom = json.load(f)
+    with open(sbom_path, "rb") as file:
+        sbom = json.load(file)
     return [
         {
             "name": component["name"],
@@ -75,11 +73,9 @@ def resolve_build_dependencies(sbom_path: str | None):
     ]
 
 
-# ------------------------------------------------------------------------
-# Generate ResourceDescriptor for each file in the result directory
-# as these files can be classified as byproducts of the build
-# ------------------------------------------------------------------------
 def list_byproducts(resultsdir: str):
+    """Generate ResourceDescriptor for each file in the result directory
+    as these files can be classified as byproducts of the build"""
     return [
         {
             "name": file.rsplit("/")[-1],
@@ -89,10 +85,8 @@ def list_byproducts(resultsdir: str):
     ]
 
 
-# ------------------------------------------------------------------------
-# Get git remote url and current commit hash of the build system
-# ------------------------------------------------------------------------
 def builder_git_rev(workspace: str | None):
+    """Get git remote url and current commit hash of the build system"""
     url = run_command(
         ["git", "remote", "get-url", "origin"],
         cwd=workspace,
@@ -112,9 +106,6 @@ def builder_git_rev(workspace: str | None):
     ]
 
 
-# ------------------------------------------------------------------------
-# Generate the provenance file from given inputs
-# ------------------------------------------------------------------------
 def generate_provenance(
     post_build_path: str,
     build_info_path: Optional[str],
@@ -122,14 +113,12 @@ def generate_provenance(
     sbom_path: Optional[str],
     builder_workspace: Optional[str],
 ):
-    with open(post_build_path, "rb") as f:
-        post_build = json.load(f)
+    """Generate the provenance file from given inputs"""
+    with open(post_build_path, "rb") as file:
+        post_build = json.load(file)
 
-    with open(build_info_path or post_build["Postbuild info"], "rb") as f:
-        build_info = json.load(f)
-
-    BUILD_TYPE_DOCUMENT = "TODO"
-    BUILD_ID_DOCUMENT = "TODO"
+    with open(build_info_path or post_build["Postbuild info"], "rb") as file:
+        build_info = json.load(file)
 
     build_id = post_build["Build ID"]
     schema = {
@@ -164,19 +153,21 @@ def generate_provenance(
                         build_info["stopTime"]
                     ).isoformat(),
                 },
-                "byproducts": [list_byproducts(resultsdir)],
+                "byproducts": list_byproducts(resultsdir),
             },
         },
     }
 
-    with open(f"{resultsdir}/slsa_provenance_{build_id}.json", "w") as f:
-        f.write(json.dumps(schema, indent=4))
+    with open(
+        f"{resultsdir}/slsa_provenance_{build_id}.json",
+        "w",
+        encoding="utf=8",
+    ) as file:
+        file.write(json.dumps(schema, indent=4))
 
 
-# ------------------------------------------------------------------------
-# Main function that parses the given arguments
-# ------------------------------------------------------------------------
 def main():
+    """Main function that parses the given arguments"""
     parser = argparse.ArgumentParser(
         prog="Provenance Converter",
         description="Convert hydra build_info into provenance SLSA 1.0",

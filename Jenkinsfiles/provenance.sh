@@ -32,4 +32,4 @@ pwd
 python3 ../../hydra_copy/provenance/provenance.py "$outdir"/"$buildID".json \
 	--sbom sbom.cdx.json \
     --results-dir "$outdir" \
-    --builder-workspace $builderWorkspace
+    --builder-workspace "$builderWorkspace"
