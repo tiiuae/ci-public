@@ -32,6 +32,12 @@ HC_REMOTE_BUILDERS=no
 #   - When one does, 'off' is a special value to disable mount enabled in conf
 HC_SRV_MOUNT=""
 
+# If this is "on", then the hydra container related scripts do not ask
+# anything from user, but assume user to accept anything that is
+# necessary to make a new hydra deployment.
+# THIS CAN INCLUDE DESTRUCTIVE ACTIONS!
+HC_NONINTERACTIVE="off"
+
 if [ -f confs/hydra.local ] ; then
   # Possible overrides
   . confs/hydra.local
