@@ -1,3 +1,6 @@
+  Copyright 2023 TII (SSRC) and the Ghaf contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
 
 Custom configuration can be done in confs/hydra.local
 See confs/hydra.default for the values that can be adjusted.
