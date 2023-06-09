@@ -6,8 +6,9 @@
 HC_PORT=3001
 HC_BASE_LABEL="hydra"
 
-# Currently just the version part of the channel name.
-#HC_CHANNEL="22.05"
+# Channel that contents of the container itself, e.g., hydra, will be
+# fetched from. Currently just the version part of the channel names.
+#HC_CHANNEL="23.05"
 
 # Server identifier
 HC_PB_SRV="hydra"
