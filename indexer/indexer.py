@@ -15,6 +15,7 @@ domain=".vedenemo.dev"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
 sbomfiles = "sbom.*"
+provenancefiles = "slsa_provenance*"
 vulnxsfiles = "vulns.*.csv"
 vulns_fixed = "vulns_fixed.*.csv"
 vulns_new = "vulns_new.*.csv"
@@ -320,6 +321,11 @@ def main(argv: list[str]):
     rep = get_reports(vulnxsfiles, f"{webifyprefix}/{bnum}")
     if rep != []:
         result['Vulnxscan Report'] = rep
+
+    # Find provenance files
+    rep = get_reports(provenancefiles)
+    if rep != []:
+        result['SLSA Provenance'] = rep
 
     # Find fixed vulnerabilities
     rep = get_reports(vulns_fixed, f"{webifyprefix}/{bnum}")
