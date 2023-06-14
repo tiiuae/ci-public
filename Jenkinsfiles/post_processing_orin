@@ -127,7 +127,7 @@ pipeline {
                         parameters: [
                           [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
                           [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
                           [$class: 'StringParameterValue', name: 'builderWorkspace', value: "$WORKSPACE"]
                         ]
                     )
