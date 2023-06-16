@@ -7,15 +7,15 @@ nucProcessingJob = ''
 orinProcessingJob = ''
 
 pipeline {
-    agent {label 'tc-agent02'}
+    agent {label "${params.label}"}
     stages {
         stage('Set variables') {
             steps {
                 script {
                     if (params.development) {
-                         resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/development/${params.server}"
+                         resultsPath = "/home/${params.label}/Jenkins-agent/workspace/results/development/${params.server}"
                     } else {
-                         resultsPath = "/home/tc-agent02/Jenkins-agent/workspace/results/${params.server}"
+                         resultsPath = "/home/${params.label}/Jenkins-agent/workspace/results/${params.server}"
                     }
                     def splitted = "${JOB_NAME}".split('/')
                     nucProcessingJob = "${splitted[0]}/post_processing_nuc"
@@ -74,7 +74,8 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
-                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development]
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
@@ -88,7 +89,8 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
-                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development]
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
