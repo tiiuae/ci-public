@@ -12,7 +12,7 @@ testJob = ''
 level = ''
 
 pipeline {
-    agent {label 'tc-agent02'}
+    agent {label "${params.label}"}
     stages {
         stage('Set variables') {
             steps {
@@ -105,7 +105,8 @@ pipeline {
                           [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
                           [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
                           [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
-                          [$class: 'StringParameterValue', name: 'server', value: "${params.server}"]
+                          [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                          [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
                         ]
                     )
                     if(build.result == "SUCCESS") {

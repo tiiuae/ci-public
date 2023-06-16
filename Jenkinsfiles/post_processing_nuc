@@ -12,7 +12,7 @@ testJob = ''
 level = ''
 
 pipeline {
-    agent {label 'tc-agent02'}
+    agent {label "${params.label}"}
     stages {
         stage('Set variables') {
             steps {
@@ -106,7 +106,8 @@ pipeline {
                           [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
                           [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
                           [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
-                          [$class: 'StringParameterValue', name: 'server', value: "${params.server}"]
+                          [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                          [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
                         ]
                     )
                     if(build.result == "SUCCESS") {
@@ -154,7 +155,7 @@ pipeline {
             steps {
               dir("${params.resultsPath}/"){
                  script {
-                     sh "python3 ~/Jenkins-agent/workspace/${level}/post_processing_orin/indexer/indexer.py /files/images/ /webify/build_reports ${params.buildID}"
+                     sh "python3 ~/Jenkins-agent/workspace/${level}/post_processing_nuc/indexer/indexer.py /files/images/ /webify/build_reports ${params.buildID}"
                      if(params.development) {
                           println("Development: ${params.development}")
                      } else {
