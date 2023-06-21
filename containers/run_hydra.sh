@@ -9,6 +9,9 @@
 
 . confs/hydra.default
 
+# See README.hydra about the version
+HYDRA_STORE_VERSION="2"
+
 PRIVILEGED="--privileged"
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
@@ -57,9 +60,9 @@ if ! [ -d "$STORE" ] && [ "$HC_NONINTERACTIVE" != "on" ] ; then
   fi
 fi
 
-if ! [ -f "${STORE}/populated" ] ; then
+if ! [ -f "${STORE}/format" ] ; then
   if [ -f "${STORE}/initializing" ] ; then
-    echo "\"${STORE}\" is partly populated by earlier run." >&2
+    echo "\"${STORE}\" has been (only) partially populated by earlier run." >&2
     echo "Don't know how to fix." >&2
     exit 1
   fi
@@ -139,7 +142,9 @@ if ! [ -f "${STORE}/populated" ] ; then
   fi
   docker stop "${HC_BASE_LABEL}-configure"
   docker container rm "${HC_BASE_LABEL}-configure"
-  touch "${STORE}/populated"
+
+  # First line is the version, we could add more information to later lines
+  echo "${HYDRA_STORE_VERSION}" > "${STORE}/format"
   rm "${STORE}/initializing"
   echo
   echo "Setup ready. Use ./run_hydra again for regular run."
@@ -147,6 +152,14 @@ if ! [ -f "${STORE}/populated" ] ; then
 else
   # Make sure we have absolute path
   STORE="$(cd "${STORE}" || exit 1 ; pwd)"
+
+  OLD_STORE_VERSION=$(cat "${STORE}/format" | head -n 1)
+
+  # Add conversions from old versions to current one here, once there's a new version
+  if [ "${OLD_STORE_VERSION}" != "${HYDRA_STORE_VERSION}" ] ; then
+    echo "Format of the existing store (version: ${OLD_STORE_VERSION}) not supported." >&2
+    exit 1
+  fi
 fi
 
 MOUNTS="\
@@ -157,8 +170,6 @@ MOUNTS="\
 if [ "$SRV" != "" ] ; then
   MOUNTS="$MOUNTS --mount type=bind,source=${SRV},target=/srv"
 fi
-
-echo "MOUNTS:" $MOUNTS
 
 if [ "$HC_CUSTOM_HOSTS" != "" ] ; then
   HOSTS="--add-host=${HC_CUSTOM_HOSTS}"
