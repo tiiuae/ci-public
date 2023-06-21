@@ -8,7 +8,7 @@ FROM nixos/nix
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
      populate.sh packages.lst upload.sh /setup/
-COPY hydra_conf.sh postbuild.py messager.py extracopy.sh webcopy.sh schedule.sh /setup/
+COPY hydra_conf.sh postbuild.py messager.py extracopy.sh schedule.sh /setup/
 
 RUN chmod +x /setup/*.sh
 
@@ -21,7 +21,7 @@ ARG HYDRA_REMOTE_BUILDERS
 ARG PB_SRV
 ARG HYDRA_URL
 
-RUN nix-env -i hydra -i postgresql -i jq
+RUN nix-env -i hydra -i postgresql -i jq -i gnused
 
 RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
     /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
