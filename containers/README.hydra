@@ -1,3 +1,6 @@
+  Copyright 2023 TII (SSRC) and the Ghaf contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
 
 Custom configuration can be done in confs/hydra.local
 See confs/hydra.default for the values that can be adjusted.
@@ -69,3 +72,10 @@ line2: Name of the Slack channel to be messaged
 Messager.py implements actual message sending and it is defined to be the current messaging
 tool in postbuild.py (Used out Docker image from /home/store)
 
+----
+
+Hydra store versions:
+
+0 - Version undefined, these stores should have "populated" flag
+1 - Older hydra builds
+2 - Hydra based on nix-23.05
