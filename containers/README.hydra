@@ -64,7 +64,7 @@ with write rights (https://api.slack.com/apps) and storing given auth token to s
 private place. Then Slack app must be installed to Slack workspace and to channel to
 be used for build information messages.
 
-Configuration file slack_conf need to be created and stored manually to /store/home.
+Configuration file slack_config need to be created and stored manually to /store/home/.
 File content need to be the following:
 line1: Secret Slack auth token
 line2: Name of the Slack channel to be messaged
