@@ -14,7 +14,7 @@
 # line2: Used Slack channel (Slack application must be installed for this channel for usage)
 #
 # Do not keep this auth file in version control system. Postbuild (user of this script) assumes
-# it is stored to store/home in host side.
+# it is stored to store/home/confs/ in host side.
 #
 #
 # ------------------------------------------------------------------------

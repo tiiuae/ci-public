@@ -37,22 +37,29 @@ and give "true" as the third parameter to ./run_hydra.sh
  ----
 
 Hydra can upload built packages to the binarycache.
-Currently this needs to be set up by placing files
-home/upload_ip.txt and home/.ssh/key within the persistent storage.
-First one should have one line telling address of the binarycache,
-and the second one is the private key to establish the connection.
 
-Optional third file home/upload_port.txt should contain the
-port to connect to.
+Currently this needs to be set up by placing files to
+persistent storage.
+- home/confs/binarycache.conf should be a shell fragment
+  setting environment variable CACHE_SERVER, and optionally
+  CACHE_PORT
+- home/.ssh/bcache.key should be a private key
+  to establish the connection.
 
  ----
 
 Hydra can upload images to the webserver.
-Currently this needs to be set up by placing files
-home/webserver_ip.txt, home/.ssh/websrv_tftp_key,
-and home/.ssh/websrv_trigger_key within the persistent storage.
-First one should have one line telling address of the webserver,
-and two latter ones are the private keys to establish the connection.
+
+Currently this needs to be set up by placing files to
+persistent storage.
+- home/confs/webserver.conf should be a shell fragment
+  setting environment variable WEB_SERVER
+- home/.ssh/websrv_sftp.key should be a private key
+  for sftp connection to the web server
+- home/.ssh/websrv_trigger.key should be a private key
+  for ssh connection to the web server
+
+Both tftp and ssh keys are needed.
 
 ----
 
@@ -61,7 +68,7 @@ with write rights (https://api.slack.com/apps) and storing given auth token to s
 private place. Then Slack app must be installed to Slack workspace and to channel to
 be used for build information messages.
 
-Configuration file slack_config need to be created and stored manually to /store/home/.
+Configuration file slack.config need to be created and stored manually to /store/home/confs/.
 File content need to be the following:
 line1: Secret Slack auth token
 line2: Name of the Slack channel to be messaged

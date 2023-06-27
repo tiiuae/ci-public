@@ -30,15 +30,41 @@ EC_RELATED="${EC_RELATED-"${EC_WRITEDIR}/extracopy.related"}"
 EC_IMGPSTFX="${EC_IMGPSTFX-"-nixos.img"}"
 EC_IMAGE_RE="${EC_IMAGE_RE-"[a-z0-9]{32}-.*-nixos\\.img"}"
 EC_BINFO_RE="${EC_BINFO_RE-"[a-z0-9]{32}-.*-build-info\\.json"}"
-EC_CACHESRVFIL="${EC_CACHESRVFIL-"/home/hydra/upload_ip.txt"}"
-EC_CACHEPORTFIL="${EC_CACHEPORTFIL-"/home/hydra/upload_port.txt"}"
-EC_CACHESSHKEY="${EC_CACHESSHKEY-"/home/hydra/.ssh/key"}"
+EC_CACHECONFFIL="${EC_CACHECONFFIL-"/home/hydra/confs/binarycache.conf"}"
+EC_CACHESSHKEY="${EC_CACHESSHKEY-"/home/hydra/.ssh/bcache.key"}"
 EC_THISSRVFIL="${EC_THISSRVFIL-"/setup/postbuildsrv.txt"}"
-EC_WEBSRVFIL="${EC_WEBSRVFIL-"/home/hydra/webserver_ip.txt"}"
+EC_WEBCONFFIL="${EC_WEBCONFFIL-"/home/hydra/confs/webserver.conf"}"
 EC_SFTPUSER="${EC_SFTPUSER-"sftp_user"}"
 EC_TRIGUSER="${EC_TRIGUSER-"script_trigger"}"
-EC_SFTPKEYFIL="${EC_SFTPKEYFIL-"/home/hydra/.ssh/websrv_sftp_key"}"
-EC_TRIGKEYFIL="${EC_TRIGKEYFIL-"/home/hydra/.ssh/websrv_trigger_key"}"
+EC_SFTPKEYFIL="${EC_SFTPKEYFIL-"/home/hydra/.ssh/websrv_sftp.key"}"
+EC_TRIGKEYFIL="${EC_TRIGKEYFIL-"/home/hydra/.ssh/websrv_trigger.key"}"
+
+if [ -f "${EC_CACHECONFFIL}" ] ; then
+    . "${EC_CACHECONFFIL}"
+fi
+if [ -f "${EC_WEBCONFFIL}" ] ; then
+    . "${EC_WEBCONFFIL}"
+fi
+
+# Config sanity checking
+if [ -n "$CACHE_SERVER" ] && ! [ -f "${EC_CACHESSHKEY}" ] ; then
+    echo "Cache server defined, but there's no key for connecting." >> "$EC_LOG"
+    unset CACHE_SERVER
+fi
+if [ -n "$CACHE_PORT" ] && [ -z "$CACHE_SERVER" ] ; then
+    echo "Cache server port defined, but no server name." >> "$EC_LOG"
+    unset CACHE_PORT
+fi
+if [ -n "$WEB_SERVER" ] ; then
+    if ! [ -f "${EC_SFTPKEYFIL}" ] ; then
+	echo "Web server defined, but there's no sftp key for connecting." >> "$EC_LOG"
+	unset WEB_SERVER
+    fi
+    if ! [ -f "${EC_TRIGKEYFIL}" ] ; then
+	echo "Web server defined, but there's no trigger key for connecting." >> "$EC_LOG"
+	unset WEB_SERVER
+    fi
+fi
 
 # Remove lock file on exit
 function On_exit {
@@ -169,19 +195,18 @@ trap On_exit EXIT
 {
     date "+%d.%m.%4Y %H:%M:%S ------------------------------------"
 
-    if [ -f "$EC_CACHESRVFIL" ] && [ -f "$EC_CACHESSHKEY" ]; then
+    if [ -n "$CACHE_SERVER" ] ; then
         NIX_SSHOPTS="-i ${EC_CACHESSHKEY}"
-        if [ -f "$EC_CACHEPORTFIL" ] ; then
-            NIX_SSHOPTS+=" -p $(<"$EC_CACHEPORTFIL")"
+        if [ -n "$CACHE_PORT" ] ; then
+            NIX_SSHOPTS+=" -p $CACHE_PORT"
         fi
         export NIX_SSHOPTS
-        NIXCOPYTO="$(<"$EC_CACHESRVFIL")"
 
         date "+%H:%M:%S Getting list of already copied images and build info files"
 
         # List all images and build info files on cache
         # shellcheck disable=SC2086 # SSHOPTS must be unquoted here
-        ssh -n $NIX_SSHOPTS "$NIXCOPYTO" find /nix/store -regextype posix-extended -maxdepth 1 \\\( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \\\) > "$EC_INCACHE"
+        ssh -n $NIX_SSHOPTS "$CACHE_SERVER" find /nix/store -regextype posix-extended -maxdepth 1 \\\( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \\\) > "$EC_INCACHE"
 
         date "+%H:%M:%S Finding new files to copy"
 
@@ -191,7 +216,7 @@ trap On_exit EXIT
         date "+%H:%M:%S Nix copying stuff..."
 
         # Copy new files to cache
-        xargs -a "$EC_NEWCACHE" -L 10 nix-copy-closure --to "$NIXCOPYTO"
+        xargs -a "$EC_NEWCACHE" -L 10 nix-copy-closure --to "$CACHE_SERVER"
 
         date "+%H:%M:%S Finding outputs and derivations"
 
@@ -199,18 +224,17 @@ trap On_exit EXIT
 
         date "+%H:%M:%S Copying outputs and derivations..."
         # Copy outputs and derivations to cache
-        xargs -a "$EC_RELATED" -L 10 nix-copy-closure --to "$NIXCOPYTO"
+        xargs -a "$EC_RELATED" -L 10 nix-copy-closure --to "$CACHE_SERVER"
     else
         date "+%H:%M:%S Cache uploading not configured"
     fi
 
-    if [ -f "$EC_WEBSRVFIL" ] && [ -f "$EC_SFTPKEYFIL" ] && [ -f "$EC_TRIGKEYFIL" ] && [ -f "$EC_THISSRVFIL" ]; then
-        WEBSRV="$(<"$EC_WEBSRVFIL")"
+    if [ -n "$WEB_SERVER" ] && [ -f "$EC_THISSRVFIL" ]; then
         THISSRV="$(<"$EC_THISSRVFIL")"
 
         date "+%H:%M:%S Getting list of dirs for this server on web server"
         # Get list of directories for this server
-        WEBDIRS="$(wget -q -O - "https://${WEBSRV}/files/images/${THISSRV}" | grep -E "^<a href=\".*/\"" | cut -d\" -f2)"
+        WEBDIRS="$(wget -q -O - "https://${WEB_SERVER}/files/images/${THISSRV}" | grep -E "^<a href=\".*/\"" | cut -d\" -f2)"
 
         # Create or truncate list file
         truncate -s0 "$EC_ONWEBSRV"
@@ -218,7 +242,7 @@ trap On_exit EXIT
         date "+%H:%M:%S Getting list of image files in the directories"
         # List image files in every directory for this server
         for DIR in $WEBDIRS; do
-            wget -q -O - "https://${WEBSRV}/files/images/${THISSRV}/${DIR}" | grep -E "^<a href=\"$EC_IMAGE_RE\"" | cut -d\" -f2 | sed "s#^#/nix/store/#" >> "$EC_ONWEBSRV"
+            wget -q -O - "https://${WEB_SERVER}/files/images/${THISSRV}/${DIR}" | grep -E "^<a href=\"$EC_IMAGE_RE\"" | cut -d\" -f2 | sed "s#^#/nix/store/#" >> "$EC_ONWEBSRV"
         done
 
         # Remove duplicates (There are a lot of symbolic links on web server for backwards compatibility at the moment, so this is actually useful)
@@ -240,10 +264,10 @@ trap On_exit EXIT
                 TGT="${TGT%"$EC_IMGPSTFX"}"
                 DIR="images/${THISSRV}/${TGT}/"
                 date "+%H:%M:%S Creating directory /upload/${DIR}"
-                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEBSRV}" > /dev/null 2>&1
-                if scp -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEBSRV}:/upload/${DIR}"; then
+                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEB_SERVER}" > /dev/null 2>&1
+                if scp -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEB_SERVER}:/upload/${DIR}"; then
                     date "+%H:%M:%S Running trigger for ${FILE}"
-                    ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEBSRV}" -- "--sha256 ${DIR}${FILE}"
+                    ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEB_SERVER}" -- "--sha256 ${DIR}${FILE}"
                 else
                     date "+%H:%M:%S Copying ${FULL} failed"
                 fi

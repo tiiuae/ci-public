@@ -30,7 +30,7 @@ nix_conf_line "max-jobs" "16"
 if [ "$1" = "no" ] ; then
   nix_conf_line "builders" ""
 else
-  ln -s /home/hydra/machines /etc/nix/
+  ln -s /home/hydra/confs/machines /etc/nix/
 fi
 
 nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/"
@@ -44,4 +44,4 @@ nix_conf_line "sandbox" "true"
 CONFFILE=$(nix-store --add nix.conf)
 
 rm /etc/nix/nix.conf
-ln -s $CONFFILE /etc/nix/nix.conf
+ln -s "$CONFFILE" /etc/nix/nix.conf
