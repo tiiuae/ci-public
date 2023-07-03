@@ -24,7 +24,7 @@ outdir="$(echo "$resultsPath"/"$buildID" | sed 's/ //')"
 
 # run sbomnix for buildtime dependencies
 export PATH=$PATH:/nix/var/nix/profiles/default/bin/
-nix run github:tiiuae/sbomnix#sbomnix -- "$image" --type=buildtime
+nix run github:tiiuae/sbomnix#sbomnix -- "$image" --type=buildtime --depth=1
 
 pwd
 
