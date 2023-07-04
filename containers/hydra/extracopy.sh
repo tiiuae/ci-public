@@ -141,7 +141,9 @@ function Sftp_mkdir_cmd {
 
     # Echo mkdir and cd for each directory
     for dir in "${patharr[@]}"; do
-        echo "mkdir ${dir}"
+        # mkdir may fail if directory exists, thus dash prefix
+        echo "-mkdir ${dir}"
+        # chdir may not fail, thus no dash prefix
         echo "cd ${dir}"
     done
 
@@ -263,9 +265,9 @@ trap On_exit EXIT
                 # Also remove image postfix to get the target name
                 TGT="${TGT%"$EC_IMGPSTFX"}"
                 DIR="images/${THISSRV}/${TGT}/"
-                date "+%H:%M:%S Creating directory /upload/${DIR}"
-                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEB_SERVER}" > /dev/null 2>&1
-                if scp -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEB_SERVER}:/upload/${DIR}"; then
+                date "+%H:%M:%S Creating directory /upload/${DIR} (Remote mkdir failures are expected for existing directories)"
+                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -b - -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEB_SERVER}" > /dev/null
+                if scp -B -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEB_SERVER}:/upload/${DIR}"; then
                     date "+%H:%M:%S Running trigger for ${FILE}"
                     ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEB_SERVER}" -- "--sha256 ${DIR}${FILE}"
                 else
