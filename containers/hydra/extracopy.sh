@@ -3,69 +3,6 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-# This is intended for debugging the script outside hydra container
-# pkill is not available inside the hydra containter atm
-if [ -n "$EC_DEBUG" ]; then
-    echo ""
-    echo "Press CTRL-C to single step"
-    echo "Kill from another window to abort"
-    echo ""
-    echo "To see the outputs from the logged part of script,"
-    echo "you'll have to e.g. tail -f the log file in another window"
-    echo ""
-    set -x
-    trap "pkill -f 'sleep 1.123h'" INT
-    trap "set +x; sleep 1.123h; set -x" DEBUG
-fi
-
-# Allow overriding any of the config variables
-EC_WRITEDIR="${EC_WRITEDIR-"/home/hydra/extracopy"}"
-EC_LOCK="${EC_LOCK-"/tmp/extracopy.lock"}"
-EC_LOG="${EC_LOG-"${EC_WRITEDIR}/extracopy.log"}"
-EC_INCACHE="${EC_INCACHE-"${EC_WRITEDIR}/extracopy.incache"}"
-EC_ONWEBSRV="${EC_ONWEBSRV-"${EC_WRITEDIR}/extracopy.onweb"}"
-EC_NEWCACHE="${EC_NEWCACHE-"${EC_WRITEDIR}/extracopy.newfiles.cache"}"
-EC_NEWWEB="${EC_NEWWEB-"${EC_WRITEDIR}/extracopy.newfiles.web"}"
-EC_RELATED="${EC_RELATED-"${EC_WRITEDIR}/extracopy.related"}"
-EC_IMGPSTFX="${EC_IMGPSTFX-"-nixos.img"}"
-EC_IMAGE_RE="${EC_IMAGE_RE-"[a-z0-9]{32}-.*-nixos\\.img"}"
-EC_BINFO_RE="${EC_BINFO_RE-"[a-z0-9]{32}-.*-build-info\\.json"}"
-EC_CACHECONFFIL="${EC_CACHECONFFIL-"/home/hydra/confs/binarycache.conf"}"
-EC_CACHESSHKEY="${EC_CACHESSHKEY-"/home/hydra/.ssh/bcache.key"}"
-EC_THISSRVFIL="${EC_THISSRVFIL-"/setup/postbuildsrv.txt"}"
-EC_WEBCONFFIL="${EC_WEBCONFFIL-"/home/hydra/confs/webserver.conf"}"
-EC_SFTPUSER="${EC_SFTPUSER-"sftp_user"}"
-EC_TRIGUSER="${EC_TRIGUSER-"script_trigger"}"
-EC_SFTPKEYFIL="${EC_SFTPKEYFIL-"/home/hydra/.ssh/websrv_sftp.key"}"
-EC_TRIGKEYFIL="${EC_TRIGKEYFIL-"/home/hydra/.ssh/websrv_trigger.key"}"
-
-if [ -f "${EC_CACHECONFFIL}" ] ; then
-    . "${EC_CACHECONFFIL}"
-fi
-if [ -f "${EC_WEBCONFFIL}" ] ; then
-    . "${EC_WEBCONFFIL}"
-fi
-
-# Config sanity checking
-if [ -n "$CACHE_SERVER" ] && ! [ -f "${EC_CACHESSHKEY}" ] ; then
-    echo "Cache server defined, but there's no key for connecting." >> "$EC_LOG"
-    unset CACHE_SERVER
-fi
-if [ -n "$CACHE_PORT" ] && [ -z "$CACHE_SERVER" ] ; then
-    echo "Cache server port defined, but no server name." >> "$EC_LOG"
-    unset CACHE_PORT
-fi
-if [ -n "$WEB_SERVER" ] ; then
-    if ! [ -f "${EC_SFTPKEYFIL}" ] ; then
-	echo "Web server defined, but there's no sftp key for connecting." >> "$EC_LOG"
-	unset WEB_SERVER
-    fi
-    if ! [ -f "${EC_TRIGKEYFIL}" ] ; then
-	echo "Web server defined, but there's no trigger key for connecting." >> "$EC_LOG"
-	unset WEB_SERVER
-    fi
-fi
-
 # Remove lock file on exit
 function On_exit {
     rm -f "$EC_LOCK"
@@ -97,29 +34,41 @@ function Truncate_from_start {
 # $1 = File containing list of files
 # $2 = Output file (One line per path)
 function Get_outputs_and_derivations {
-    local path
+    local path count
 
     # Truncate/create empty output file
     truncate -s0 "$2"
+    count=0
 
-    # Read file list one by one
-    while IFS= read -r f; do
-        # If it looks like a build info file and it exists
-        if [[ $f =~ ^/nix/store/${EC_BINFO_RE}$ ]] && [ -f "$f" ]; then
-            # Extract output path from json
-            path="$(jq --raw-output '.outputs[0].path' "$f")"
-            # If valid value was read then add it to output file
-            if [[ $path != null ]]; then
-                echo "$path" >> "$2"
+    if jq --version > /dev/null 2>&1; then
+        # Read file list one by one
+        while IFS= read -r f; do
+            # If it looks like a build info file and it exists
+            if [[ $f =~ ^/nix/store/${EC_BINFO_RE}$ ]] && [ -f "$f" ]; then
+                # Extract output path from json
+                path="$(jq --raw-output '.outputs[0].path' "$f")"
+                # If valid value was read then add it to output file
+                if [[ $path != null ]]; then
+                    echo "$path" >> "$2"
+                    count=$((count + 1))
+                fi
+                # Extract derivation path from json
+                path="$(jq --raw-output .drvPath "$f")"
+                # If valid value was read then add it to output file
+                if [[ $path != null ]]; then
+                    echo "$path" >> "$2"
+                    count=$((count + 1))
+                fi
             fi
-            # Extract derivation path from json
-            path="$(jq --raw-output .drvPath "$f")"
-            # If valid value was read then add it to output file
-            if [[ $path != null ]]; then
-                echo "$path" >> "$2"
-            fi
-        fi
-    done < "$1"
+        done < "$1"
+    else
+        date "+%H:%M:%S jq is not installed! Cannot get related files!" >&2
+    fi
+
+    if [ "$count" -gt 0 ]; then
+        return 0
+    fi
+    return 1
 }
 
 # Sftp_mkdir_cmd function makes a command sequence for sftp that creates the
@@ -151,6 +100,36 @@ function Sftp_mkdir_cmd {
     echo "quit"
 }
 
+# This is intended for debugging the script outside hydra container
+# pkill is not available inside the hydra containter atm
+if [ -n "$EC_DEBUG" ]; then
+    echo ""
+    echo "Press CTRL-C to single step"
+    echo "Kill from another window to abort"
+    echo ""
+    echo "To see the outputs from the logged part of script,"
+    echo "you'll have to e.g. tail -f the log file in another window"
+    echo ""
+    set -x
+    trap "pkill -f 'sleep 1.123h'" INT
+    trap "set +x; sleep 1.123h; set -x" DEBUG
+fi
+
+# Allow overriding any of the config variables
+EC_WRITEDIR="${EC_WRITEDIR-"/home/hydra/extracopy"}"
+EC_LOCK="${EC_LOCK-"/tmp/extracopy.lock"}"
+EC_LOG="${EC_LOG-"${EC_WRITEDIR}/extracopy.log"}"
+EC_INCACHE="${EC_INCACHE-"${EC_WRITEDIR}/extracopy.incache"}"
+EC_ONWEBSRV="${EC_ONWEBSRV-"${EC_WRITEDIR}/extracopy.onweb"}"
+EC_NEWCACHE="${EC_NEWCACHE-"${EC_WRITEDIR}/extracopy.newfiles.cache"}"
+EC_NEWWEB="${EC_NEWWEB-"${EC_WRITEDIR}/extracopy.newfiles.web"}"
+EC_RELATED="${EC_RELATED-"${EC_WRITEDIR}/extracopy.related"}"
+EC_IMGPSTFX="${EC_IMGPSTFX-"-nixos.img"}"
+EC_IMAGE_RE="${EC_IMAGE_RE-"[a-z0-9]{32}-.*-nixos\\.img"}"
+EC_BINFO_RE="${EC_BINFO_RE-"[a-z0-9]{32}-.*-build-info\\.json"}"
+EC_CACHECONFFIL="${EC_CACHECONFFIL-"/home/hydra/confs/binarycache.conf"}"
+EC_THISSRVFIL="${EC_THISSRVFIL-"/setup/postbuildsrv.txt"}"
+EC_WEBCONFFIL="${EC_WEBCONFFIL-"/home/hydra/confs/webserver.conf"}"
 
 case "$1" in
 "")
@@ -159,8 +138,12 @@ case "$1" in
 check-script)
     # This not intended to be used inside the hydra container
     # Just to check for errors on development environment that has shellcheck and bashate installed
-    if shellcheck "${0}" && bashate -i E006 "${0}"; then
-        echo Nothing to complain
+    if shellcheck --help > /dev/null 2>&1 && bashate --help > /dev/null 2>&1; then
+        if shellcheck "$0" && bashate -i E006 "$0"; then
+            echo "Nothing to complain"
+        fi
+    else
+        echo "Please install shellcheck and bashate to use check-script functionality"
     fi
     exit 1
 ;;
@@ -197,46 +180,103 @@ trap On_exit EXIT
 {
     date "+%d.%m.%4Y %H:%M:%S ------------------------------------"
 
-    if [ -n "$CACHE_SERVER" ] ; then
-        NIX_SSHOPTS="-i ${EC_CACHESSHKEY}"
-        if [ -n "$CACHE_PORT" ] ; then
-            NIX_SSHOPTS+=" -p $CACHE_PORT"
+    if [ -r "$EC_CACHECONFFIL" ] ; then
+        date "+%H:%M:%S Sourcing $EC_CACHECONFFIL"
+        #shellcheck disable=SC1090 # Do not complain about not being able to follow
+        . "$EC_CACHECONFFIL"
+    else
+        date "+%H:%M:%S EC_CACHECONFFIL: ${EC_CACHECONFFIL} is not readable (cache upload disabled)"
+    fi
+
+    # Check cache config settings
+    if [ -n "$CACHE_SERVER" ]; then
+        if [ -z "$CACHE_SSH_KEY_FILE" ]; then
+            date "+%H:%M:%S Cache server defined, but CACHE_SSH_KEY_FILE is undefined or empty (cache upload disabled)"
+            unset CACHE_SERVER
+        else
+            if [ ! -r "$CACHE_SSH_KEY_FILE" ]; then
+                date "+%H:%M:%S CACHE_SSH_KEY_FILE: ${CACHE_SSH_KEY_FILE} is unreadable (cache upload disabled)"
+                unset CACHE_SERVER
+            fi
         fi
-        export NIX_SSHOPTS
+    fi
+
+    if [ -n "$CACHE_SERVER" ]; then
+        CACHE_PORT=${CACHE_PORT-"22"}
+
+        export NIX_SSHOPTS="-o BatchMode=yes -i ${CACHE_SSH_KEY_FILE} -p ${CACHE_PORT}"
 
         date "+%H:%M:%S Getting list of already copied images and build info files"
 
         # List all images and build info files on cache
         # shellcheck disable=SC2086 # SSHOPTS must be unquoted here
-        ssh -n $NIX_SSHOPTS "$CACHE_SERVER" find /nix/store -regextype posix-extended -maxdepth 1 \\\( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \\\) > "$EC_INCACHE"
+        if ssh -n $NIX_SSHOPTS "$CACHE_SERVER" find /nix/store -regextype posix-extended -maxdepth 1 \\\( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \\\) > "$EC_INCACHE"; then
+            date "+%H:%M:%S Finding new files to copy"
 
-        date "+%H:%M:%S Finding new files to copy"
+            # List all images and build info files and remove copied ones to get list of new files
+            if find /nix/store -regextype posix-extended -maxdepth 1 \( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \) | grep -vxFf "$EC_INCACHE" > "$EC_NEWCACHE"; then
+                date "+%H:%M:%S Nix copying stuff..."
 
-        # List all images and build info files and remove copied ones to get list of new files
-        find /nix/store -regextype posix-extended -maxdepth 1 \( -regex "^/nix/store/$EC_IMAGE_RE\$" -o -regex "^/nix/store/$EC_BINFO_RE\$" \) | grep -vxFf "$EC_INCACHE" > "$EC_NEWCACHE"
+                # Copy new files to cache
+                if xargs -a "$EC_NEWCACHE" -L 10 nix-copy-closure --to "$CACHE_SERVER"; then
+                    date "+%H:%M:%S Finding outputs and derivations"
 
-        date "+%H:%M:%S Nix copying stuff..."
-
-        # Copy new files to cache
-        xargs -a "$EC_NEWCACHE" -L 10 nix-copy-closure --to "$CACHE_SERVER"
-
-        date "+%H:%M:%S Finding outputs and derivations"
-
-        Get_outputs_and_derivations "$EC_NEWCACHE" "$EC_RELATED"
-
-        date "+%H:%M:%S Copying outputs and derivations..."
-        # Copy outputs and derivations to cache
-        xargs -a "$EC_RELATED" -L 10 nix-copy-closure --to "$CACHE_SERVER"
+                    if Get_outputs_and_derivations "$EC_NEWCACHE" "$EC_RELATED"; then
+                        date "+%H:%M:%S Copying outputs and derivations..."
+                        # Copy outputs and derivations to cache
+                        if ! xargs -a "$EC_RELATED" -L 10 nix-copy-closure --to "$CACHE_SERVER"; then
+                            date "+%H:%M:%S Copying failed: $?"
+                        fi
+                    fi
+                fi
+            fi
+        fi
     else
         date "+%H:%M:%S Cache uploading not configured"
     fi
 
-    if [ -n "$WEB_SERVER" ] && [ -f "$EC_THISSRVFIL" ]; then
-        THISSRV="$(<"$EC_THISSRVFIL")"
+    if [ -r "$EC_WEBCONFFIL" ] ; then
+        date "+%H:%M:%S Sourcing $EC_WEBCONFFIL"
+        #shellcheck disable=SC1090 # Do not complain about not being able to follow
+        . "$EC_WEBCONFFIL"
+    else
+        date "+%H:%M:%S ${EC_WEBCONFFIL} is not readable (web upload disabled)"
+    fi
 
+    # Check web server config settings
+    if [ -n "$WEB_SERVER" ] ; then
+        CHECKLIST=("WEB_SFTP_KEY_FILE" "WEB_TRIG_KEY_FILE" "WEB_SFTP_USER" "WEB_TRIG_USER")
+
+        for ITEM in "${CHECKLIST[@]}"; do
+            if [ -z "${!ITEM}" ]; then
+                date "+%H:%M:%S Web server defined, but ${ITEM} is undefined or empty (disabling web upload)"
+                unset WEB_SERVER
+            else
+                if [[ $ITEM == *FILE ]] && [ ! -r "${!ITEM}" ]; then
+                    date "+%H:%M:%S ${ITEM}: ${!ITEM} is unreadable (disabling web upload)"
+                    unset WEB_SERVER
+                fi
+            fi
+        done
+
+        WEB_PROTO="${WEB_PROTO-"https"}"
+        WEB_SSH_PORT="${WEB_SSH_PORT-"22"}"
+        if [ -n "$WEB_PORT" ]; then
+            WEB_PORT=":$WEB_PORT"
+        fi
+
+        if [ -r "$EC_THISSRVFIL" ]; then
+            EC_THISSRV="$(<"$EC_THISSRVFIL")"
+        else
+            date "+%H:%M:%S EC_THISSRVFIL: ${EC_THISSRVFIL} is unreadable (disabling web upload)"
+            unset WEB_SERVER
+        fi
+    fi
+
+    if [ -n "$WEB_SERVER" ]; then
         date "+%H:%M:%S Getting list of dirs for this server on web server"
         # Get list of directories for this server
-        WEBDIRS="$(wget -q -O - "https://${WEB_SERVER}/files/images/${THISSRV}" | grep -E "^<a href=\".*/\"" | cut -d\" -f2)"
+        WEBDIRS="$(wget -q -O - "${WEB_PROTO}://${WEB_SERVER}${WEB_PORT}/files/images/${EC_THISSRV}" | grep -E "^<a href=\".*/\"" | cut -d\" -f2)"
 
         # Create or truncate list file
         truncate -s0 "$EC_ONWEBSRV"
@@ -244,7 +284,7 @@ trap On_exit EXIT
         date "+%H:%M:%S Getting list of image files in the directories"
         # List image files in every directory for this server
         for DIR in $WEBDIRS; do
-            wget -q -O - "https://${WEB_SERVER}/files/images/${THISSRV}/${DIR}" | grep -E "^<a href=\"$EC_IMAGE_RE\"" | cut -d\" -f2 | sed "s#^#/nix/store/#" >> "$EC_ONWEBSRV"
+            wget -q -O - "${WEB_PROTO}://${WEB_SERVER}${WEB_PORT}/files/images/${EC_THISSRV}/${DIR}" | grep -E "^<a href=\"$EC_IMAGE_RE\"" | cut -d\" -f2 | sed "s#^#/nix/store/#" >> "$EC_ONWEBSRV"
         done
 
         # Remove duplicates (There are a lot of symbolic links on web server for backwards compatibility at the moment, so this is actually useful)
@@ -264,14 +304,17 @@ trap On_exit EXIT
                 TGT="${FILE:33}"
                 # Also remove image postfix to get the target name
                 TGT="${TGT%"$EC_IMGPSTFX"}"
-                DIR="images/${THISSRV}/${TGT}/"
+                DIR="images/${EC_THISSRV}/${TGT}/"
                 date "+%H:%M:%S Creating directory /upload/${DIR} (Remote mkdir failures are expected for existing directories)"
-                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -b - -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEB_SERVER}" > /dev/null
-                if scp -B -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEB_SERVER}:/upload/${DIR}"; then
-                    date "+%H:%M:%S Running trigger for ${FILE}"
-                    ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEB_SERVER}" -- "--sha256 ${DIR}${FILE}"
+                if Sftp_mkdir_cmd "/upload/${DIR}" | sftp -b - -i "$WEB_SFTP_KEY_FILE" -P "$WEB_SSH_PORT" "${WEB_SFTP_USER}@${WEB_SERVER}" > /dev/null; then
+                    if scp -B -s -i "$WEB_SFTP_KEY_FILE" -P "$WEB_SSH_PORT" "$FULL" "${WEB_SFTP_USER}@${WEB_SERVER}:/upload/${DIR}"; then
+                        date "+%H:%M:%S Running trigger for $FILE"
+                        ssh -n -i "$WEB_TRIG_KEY_FILE" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "--sha256 ${DIR}${FILE}"
+                    else
+                        date "+%H:%M:%S Copying ${FULL} failed"
+                    fi
                 else
-                    date "+%H:%M:%S Copying ${FULL} failed"
+                    date "+%H:%M:%S Creating /upload/${DIR} failed"
                 fi
             fi
         done < "$EC_NEWWEB"
