@@ -55,7 +55,7 @@ persistent storage.
 
 - home/confs/webserver.conf should be a shell fragment
   setting environment variables WEB_SERVER, WEB_SFTP_USER, WEB_SFTP_KEY_FILE,
-  WEB_TRIG_USER, WEB_TRIG_KEY_FILE and optiobally WEB_PROTO, WEB_PORT and WEB_SSH_PORT.
+  WEB_TRIG_USER, WEB_TRIG_KEY_FILE and optionally WEB_PROTO, WEB_PORT and WEB_SSH_PORT.
   Please see example-webserver.conf for details
 
 ----
