@@ -131,11 +131,11 @@ def generate_provenance(
                 "externalParameters": {},
                 "internalParameters": {
                     "server": post_build["Server"],
-                    "system": post_build["System"],
-                    "jobset": post_build["Jobset"],
                     "project": post_build["Project"],
+                    "jobset": post_build["Jobset"],
                     "job": post_build["Job"],
                     "drvPath": post_build["Derivation store path"],
+                    "system": post_build["System"],
                 },
                 "resolvedDependencies": resolve_build_dependencies(sbom_path),
             },
@@ -156,6 +156,7 @@ def generate_provenance(
                 "byproducts": list_byproducts(resultsdir),
             },
         },
+        "hydra_buildInfo": build_info
     }
 
     with open(
