@@ -116,7 +116,7 @@ if ! [ -f "${STORE}/format" ] ; then
        $PRIVILEGED \
        --mount type=bind,source="${STORE}/nix",target=/nix/outside \
        --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
-       -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "$HC_BASE_LABEL"
+       -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "${HC_BASE_LABEL}"
 
   # Mount store over the nix store, run rest of the setup
   mkdir -p "${STORE}/home"
@@ -126,13 +126,13 @@ if ! [ -f "${STORE}/format" ] ; then
        --mount type=bind,source="${STORE}/nix",target=/nix \
        --mount type=bind,source="${STORE}/home",target=/home/hydra \
        -e SETUP_RUN=2 -e PW_ADMIN="$PW_ADMIN" -e PW_AUTO="$PW_AUTO" \
-       -t "$HC_BASE_LABEL"
+       -t "${HC_BASE_LABEL}"
   echo "Restarting container, configuring hydra projects and jobsets"
   docker run --name "${HC_BASE_LABEL}-configure" -p "${HC_PORT}:3000" \
        $PRIVILEGED \
        --mount type=bind,source="${STORE}/nix",target=/nix \
        --mount type=bind,source="${STORE}/home",target=/home/hydra \
-       -t "$HC_BASE_LABEL" &
+       -t "${HC_BASE_LABEL}" &
   sleep 15
   if ! HYDRACTL_PASSWORD="$PW_AUTO" ./hydra/hydra-configure.sh "${HC_PORT}" ; then
     docker stop "${HC_BASE_LABEL}-configure"
@@ -179,17 +179,21 @@ fi
 
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
-  docker run -i -p "${HC_PORT}:3000" \
+  docker run -i \
+         --name "${HC_BASE_LABEL}-cnt" \
+         -p "${HC_PORT}:3000" \
          $PRIVILEGED \
          $MOUNTS \
          $HOSTS \
          -e SETUP_RUN="ext" \
-         -t "$HC_BASE_LABEL"
+         -t "${HC_BASE_LABEL}"
 else
   # Regular run
-  docker run -i -p "${HC_PORT}:3000" \
+  docker run -i \
+         --name "${HC_BASE_LABEL}-cnt" \
+         -p "${HC_PORT}:3000" \
          $PRIVILEGED \
          $MOUNTS \
          $HOSTS \
-         -t "$HC_BASE_LABEL"
+         -t "${HC_BASE_LABEL}"
 fi
