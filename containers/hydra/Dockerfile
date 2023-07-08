@@ -7,7 +7,7 @@ FROM nixos/nix
 
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
-     populate.sh packages.lst upload.sh /setup/
+     populate.sh packages.lst pbhook.sh upload.sh sign.sh /setup/
 COPY hydra_conf.sh postbuild.py extracopy.sh schedule.sh messager.py /setup/
 
 

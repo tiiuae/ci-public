@@ -58,7 +58,19 @@ persistent storage.
   WEB_TRIG_USER, WEB_TRIG_KEY_FILE and optiobally WEB_PROTO, WEB_PORT and WEB_SSH_PORT.
   Please see example-webserver.conf for details
 
-----
+ ----
+
+Hydra can sign packages it builds.
+
+Currently this needs to be set up by placing files to
+persistent storage.
+
+- home/confs/signing.conf should be a shell fragment
+  setting environment variables SIGNING_SRV, SIGNING_SRV_KEY_FILE,
+  SIGNING_SRV_PATH, SIGNING_SRV_USER, and optionally SIGNING_PORT.
+  Please see example-signing.conf for details.
+
+ ----
 
 Hydra supports messaging to Slack channel. One needs first to create new Slack app
 with write rights (https://api.slack.com/apps) and storing given auth token to safe
@@ -73,8 +85,7 @@ line2: Name of the Slack channel to be messaged
 Messager.py implements actual message sending and it is defined to be the current messaging
 tool using env variable POSTBUILD_MSGSCRIPT in the run.sh (container booting code)
 
-
-----
+ ----
 
 Hydra store versions:
 
