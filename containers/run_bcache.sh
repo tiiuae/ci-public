@@ -43,7 +43,7 @@ if ! [ -d "${BCACHE}" ] ; then
 
   echo "Copying store"
   # Mount store as /nix/outside, so the container can copy files between internal store and outside store
-  docker run -i -p ${HC_PORT}:3000 --mount type=bind,source="${BCACHE}/nix",target=/nix/outside --mount type=bind,source="${BCACHE}/home",target=/nix/outside_home -e SETUP_RUN=1 -t "$BCC_BASE_LABEL"
+  docker run -i --mount type=bind,source="${BCACHE}/nix",target=/nix/outside --mount type=bind,source="${BCACHE}/home",target=/nix/outside_home -e SETUP_RUN=1 -t "$BCC_BASE_LABEL"
 else
   # Make sure we have absolute path
   BCACHE="$(cd "${BCACHE}" || exit 1 ; pwd)"
@@ -54,6 +54,7 @@ MOUNTS="\
  --mount type=bind,source=${BCACHE}/home,target=/home/hydra \
 "
 
-docker run -i -p ${BCC_SSH_PORT}:22 \
+docker run -i \
+         -p "${BCC_SSH_PORT}:22" \
          $MOUNTS \
          -t "$BCC_BASE_LABEL"
