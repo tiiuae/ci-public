@@ -17,12 +17,13 @@ if [ -f /home/hydra/confs/signing.conf ] ; then
     fi
 
     SIGNTMPDIR="/home/hydra/signatures"
+    HYDRA_INSTANCE="$(cat /setup/postbuildsrv.txt)"
     mkdir -p "${SIGNTMPDIR}"
 
     for PTH in $OUT_PATHS $DRV_PATH
     do
       SHA256SUM="$(sha256sum $PTH)"
-      SIGNATURE_FILE="${SIGNTMPDIR}/$(basename "${PTH}").signature"
+      SIGNATURE_FILE="${SIGNTMPDIR}/$(basename "${PTH}")-${HYDRA_INSTANCE}.signature"
 
       ssh $SIGN_SSHOPTS "$SIGNING_SRV" "${SIGNING_SRV_PATH}/start.sh" \
 	  --sign "--h=${SHA256SUM}" | tail -n 1 > "${SIGNATURE_FILE}"
