@@ -112,7 +112,7 @@ if ! [ -f "${STORE}/format" ] ; then
 
   echo "Copying store"
   # Mount store as /nix/outside, so the container can copy files between internal store and outside store
-  docker run -i \
+  docker run \
        $PRIVILEGED \
        --mount type=bind,source="${STORE}/nix",target=/nix/outside \
        --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
@@ -121,7 +121,7 @@ if ! [ -f "${STORE}/format" ] ; then
   # Mount store over the nix store, run rest of the setup
   mkdir -p "${STORE}/home"
   echo "Restarting container, running setup"
-  docker run -i \
+  docker run \
        $PRIVILEGED \
        --mount type=bind,source="${STORE}/nix",target=/nix \
        --mount type=bind,source="${STORE}/home",target=/home/hydra \
@@ -179,7 +179,7 @@ fi
 
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
-  docker run -i \
+  docker run \
          --name "${HC_BASE_LABEL}-cnt" \
          -p "${HC_PORT}:3000" \
          $PRIVILEGED \
@@ -189,7 +189,7 @@ if [ "$CONTAINER_DEBUG" = "true" ] ; then
          -t "${HC_BASE_LABEL}"
 else
   # Regular run
-  docker run -i \
+  docker run \
          --name "${HC_BASE_LABEL}-cnt" \
          -p "${HC_PORT}:3000" \
          $PRIVILEGED \
