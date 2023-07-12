@@ -147,6 +147,8 @@ def main(argv: list[str]):
 
         nixbuildinfo = nix_store_add(infofn)
 
+        subprocess.run(["/setup/sign.sh", nixbuildinfo]);
+
         # Print the build-info nix store path so that it can be scraped
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
