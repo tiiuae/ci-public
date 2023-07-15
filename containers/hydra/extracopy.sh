@@ -301,14 +301,14 @@ trap On_exit EXIT
                 # Remove prefix to get plain filename
                 FILE="${FULL#/nix/store/}"
                 # Look for matching signature file
-                SIGNF="$(ls -1 /nix/store/*-${FILE}-${EC_THISSRV}.signature 2>/dev/null | head -n 1)"
+                SIGNF="$(find /nix/store/*"-${FILE}-${EC_THISSRV}.signature" 2>/dev/null | head -n 1)"
 
                 # If not signed yet, try to sign now.
-                if [ -z ${SIGNF} ] ; then
+                if [ -z "${SIGNF}" ] ; then
                     /setup/sign.sh "${FULL}"
                     # TODO: Should sign.sh provide this information directly to us?
-                    SIGNF="$(ls -1 /nix/store/*-${FILE}-${EC_THISSRV}.signature 2>/dev/null | head -n 1)"
-		fi
+                    SIGNF="$(find /nix/store/*"-${FILE}-${EC_THISSRV}.signature" 2>/dev/null | head -n 1)"
+                fi
 
                 # Remove hash and dash from filename
                 TGT="${FILE:33}"
@@ -320,10 +320,10 @@ trap On_exit EXIT
                     if scp -B -s -i "$WEB_SFTP_KEY_FILE" -P "$WEB_SSH_PORT" "$FULL" "${WEB_SFTP_USER}@${WEB_SERVER}:/upload/${DIR}"; then
                         date "+%H:%M:%S Running trigger for $FILE"
                         ssh -n -i "$WEB_TRIG_KEY_FILE" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "--sha256 ${DIR}${FILE}"
-                        if [ -n ${SIGNF} ] ; then
+                        if [ -n "${SIGNF}" ] ; then
                             if scp -B -s -i "$WEB_SFTP_KEY_FILE" -P "$WEB_SSH_PORT" "$SIGNF" "${WEB_SFTP_USER}@${WEB_SERVER}:/upload/${DIR}"; then
                                 date "+%H:%M:%S Running trigger for $SIGNF"
-                                ssh -n -i "$WEB_TRIG_KEY_FILE" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "--sha256 ${DIR}${SIGNF}"
+                                ssh -n -i "$WEB_TRIG_KEY_FILE" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "${DIR}${SIGNF}"
                             else
                                 date "+%H:%M:%S Copying ${SIGNF} failed"
                             fi
