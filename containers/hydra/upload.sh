@@ -16,7 +16,7 @@ if [ -f /home/hydra/confs/binarycache.conf ] ; then
         export NIX_SSHOPTS="-i $CACHE_SSH_KEY_FILE"
       fi
 
-      nix-copy-closure --to $CACHE_SERVER $OUT_PATHS $DRV_PATH
+      nix-copy-closure --to $CACHE_SERVER $@
     fi
   fi
 fi
