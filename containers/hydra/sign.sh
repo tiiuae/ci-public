@@ -27,7 +27,9 @@ if [ -f /home/hydra/confs/signing.conf ] ; then
 
       ssh $SIGN_SSHOPTS "$SIGNING_SRV" "${SIGNING_SRV_PATH}/start.sh" \
 	  --sign "--h=${SHA256SUM}" | tail -n 1 > "${SIGNATURE_FILE}"
-      nix-store --add "${SIGNATURE_FILE}"
+      STORE_SIGN_FILE="$(nix-store --add "${SIGNATURE_FILE}")"
+
+      echo "${STORE_SIGN_FILE}"
 
       # Remove temporary
       rm -f "${SIGNATURE_FILE}"
