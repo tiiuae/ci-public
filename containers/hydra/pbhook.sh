@@ -6,4 +6,4 @@
 # Callback script called after a package has been built
 
 /setup/sign.sh $OUT_PATHS $DRV_PATH
-/setup/upload.sh
+/setup/upload.sh $OUT_PATHS $DRV_PATH
