@@ -23,9 +23,9 @@ HYDRA_URL="localhost:${HC_PORT}"
 # If "yes", will use <store>/home/confs/machines file, which then must be provided
 HC_REMOTE_BUILDERS=no
 
-# Entry to add to the container hosts file (for address resolution).
-# Currently can't contain multiple entries.
-#HC_CUSTOM_HOSTS="hostname:ip"
+# Entries to add to the container hosts file (for address resolution).
+declare -a HC_CUSTOM_HOSTS
+#HC_CUSTOM_HOSTS=("hostname1:ip1" "hostname2:ip2")
 
 # Host system directory to mount as /srv inside container
 # Empty to not mount /srv at all.

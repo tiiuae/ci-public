@@ -171,11 +171,11 @@ if [ "$SRV" != "" ] ; then
   MOUNTS="$MOUNTS --mount type=bind,source=${SRV},target=/srv"
 fi
 
-if [ "$HC_CUSTOM_HOSTS" != "" ] ; then
-  HOSTS="--add-host=${HC_CUSTOM_HOSTS}"
-else
-  HOSTS=""
-fi
+HOSTS=""
+for host in ${HC_CUSTOM_HOSTS[@]}
+do
+ HOSTS+="--add-host=$host "
+done
 
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
