@@ -8,12 +8,11 @@
 # Creates build information json file and a symbolic link to the image file
 # with human understandable name.
 # ------------------------------------------------------------------------
-import sys
 import json
 import os
-import tempfile
 import subprocess
-
+import sys
+import tempfile
 
 # ------------------------------------------------------------------------
 # Global variables
@@ -30,16 +29,19 @@ infosuffix = "-build-info.json"
 # code = optional exit code
 # ------------------------------------------------------------------------
 def perror(txt, code=1):
-    if txt != None:
+    if txt is not None:
         print(txt, file=sys.stderr)
 
     messagescript = os.getenv("POSTBUILD_MSGSCRIPT")
-    if messagescript != None:
+    if messagescript is not None:
         ret = os.system(messagescript)
         if ret != 0:
             print(f"Message script return code: {ret}", file=sys.stderr)
 
-    sys.exit(code)
+    if txt is not None:
+        print("Quitting early")
+        sys.exit(code)
+
 
 # ------------------------------------------------------------------------
 # Add given path to nix store
@@ -47,12 +49,15 @@ def perror(txt, code=1):
 # returns nix store path for added file/dir
 # ------------------------------------------------------------------------
 def nix_store_add(path: str) -> str:
-    result = subprocess.run([nixstore, '--add', path], stdout=subprocess.PIPE)
+    result = subprocess.run([nixstore, "--add", path], stdout=subprocess.PIPE)
 
     if result.returncode != 0:
-        perror(f"{nixstore} --add {path} failed ({result.returncode}):\n{result.stderr.decode('utf-8')}")
+        perror(
+            f"{nixstore} --add {path} failed ({result.returncode}):"
+            f"\n{result.stderr.decode('utf-8')}"
+        )
 
-    return result.stdout.decode('utf-8').strip()
+    return result.stdout.decode("utf-8").strip()
 
 
 # ------------------------------------------------------------------------
@@ -61,10 +66,13 @@ def nix_store_add(path: str) -> str:
 # ------------------------------------------------------------------------
 def nix_store_del(path: str):
     if os.path.exists(path):
-        result = subprocess.run([nixstore, '--delete', path], stdout=subprocess.PIPE)
+        result = subprocess.run([nixstore, "--delete", path], stdout=subprocess.PIPE)
 
         if result.returncode != 0:
-            perror(f"{nixstore} --delete {path} failed ({result.returncode}):\n{result.stderr.decode('utf-8')}")
+            perror(
+                f"{nixstore} --delete {path} failed ({result.returncode}):"
+                f"\n{result.stderr.decode('utf-8')}"
+            )
 
 
 # ------------------------------------------------------------------------
@@ -79,12 +87,12 @@ def main(argv: list[str]):
 
     # HYDRA_JSON is set by Hydra to point to build information .json file
     jsonfn = os.getenv("HYDRA_JSON")
-    if jsonfn == None:
+    if jsonfn is None:
         perror("HYDRA_JSON not defined")
 
     # POSTBUILD_SERVER needs to be set to the current server (e.g. hydra or awsarm)
     hydra = os.getenv("POSTBUILD_SERVER")
-    if hydra == None:
+    if hydra is None:
         perror("POSTBUILD_SERVER not defined")
 
     # Allow override of the default nix-store command
@@ -104,16 +112,16 @@ def main(argv: list[str]):
         binfo = json.load(jsonf)
 
     # Check status of the build, we are interested only in finished builds
-    if binfo['buildStatus'] != 0 or binfo['finished'] != True or binfo['event'] != "buildFinished":
+    if not binfo["finished"] or binfo["buildStatus"] != 0 or binfo["event"] != "buildFinished":
         perror("Unexpected build status")
 
     # Find output path
     outp = None
-    for output in binfo['outputs']:
-        if output['name'] == 'out':
-            outp = output['path']
+    for output in binfo["outputs"]:
+        if output["name"] == "out":
+            outp = output["path"]
 
-    if outp == None:
+    if outp is None:
         perror("Output not found")
 
     imgf = outp + "/" + imagefn
@@ -122,8 +130,8 @@ def main(argv: list[str]):
     if not os.path.isfile(imgf):
         perror(f"{imgf} not found")
 
-    target = binfo['job'].split('.')[0]
-    build = binfo['build']
+    target = binfo["job"].split(".")[0]
+    build = binfo["build"]
     linkname = f"{target}{linksuffix}"
     infoname = f"{hydra}-{build}{infosuffix}"
 
@@ -139,7 +147,7 @@ def main(argv: list[str]):
         print(f'POSTBUILD_LINK="{niximglink}"')
 
         # Add symlink info also to build information
-        binfo['imageLink'] = niximglink
+        binfo["imageLink"] = niximglink
 
         # Write build information to build info file and add to nix store
         with open(infofn, "w") as infof:
@@ -154,6 +162,11 @@ def main(argv: list[str]):
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
     perror(None, 0)
+
+    subprocess.run(
+        ["/setup/provenance.sh", niximglink, nixbuildinfo],
+        stdout=subprocess.PIPE,
+    )
 
 
 # ------------------------------------------------------------------------
