@@ -35,6 +35,11 @@ RUN chmod +x /launch/*.sh
 RUN chown -R hydra:hydra /nix/var/nix
 RUN rm -Rf /root/.cache
 
+# install sbomnix
+COPY install-sbomnix.sh /setup/
+RUN chmod +x /setup/install-sbomnix.sh
+RUN /setup/install-sbomnix.sh
+
 # copy all other setup scripts that will be used later
 COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py extracopy.sh \ 
     schedule.sh messager.py provenance.sh provenance.py \
