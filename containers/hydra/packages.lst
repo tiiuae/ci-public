@@ -34,3 +34,11 @@
 /nix/store/v28dv6l0qk3j382kp40bksa1v6h7dx9p-bash-5.2.tar.gz
 /nix/store/zkas816mjrr8ijdj29qs4wqyn38l4j12-libunistring-1.1.tar.gz
 /nix/store/0avnvyc7pkcr4pjqws7hwpy87m6wlnjc-make-4.4.1.tar.gz
+
+## RISC-V
+# fakeroot
+/nix/store/xjc3kbwkz4w48p9jq81mkd3cxcq7pzxm-fakeroot_1.29.orig.tar.gz
+/nix/store/j6ij02s4aq6di55xgm22hdybhjb0fmgv-also-wrap-stat-library-call.patch
+# dhcpcd
+/nix/store/rv4gqdkg4s0zq1csbjm1b253kcy1798j-dhcpcd-9.4.1.tar.xz
+/nix/store/89hvrm92nv63x565nc2nds0kz2b8mm7g-openresolv-3.12.0.tar.xz
