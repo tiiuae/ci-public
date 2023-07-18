@@ -13,5 +13,5 @@ if [ -f /home/hydra/upload_ip.txt ] && [ -f /home/hydra/.ssh/key ] ; then
     export NIX_SSHOPTS="-i /home/hydra/.ssh/key"
   fi
 
-  nix-copy-closure --to hydra@$(cat /home/hydra/upload_ip.txt) $OUT_PATHS $DRV_PATH
+  nix-copy-closure --to hydra@$(cat /home/hydra/upload_ip.txt) $@
 fi
