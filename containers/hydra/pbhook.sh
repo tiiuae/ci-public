@@ -6,4 +6,4 @@
 # Callback script called after a package has been built
 
 /home/hydra/scripts/sign.sh $OUT_PATHS $DRV_PATH
-/home/hydra/scripts/upload.sh
+/home/hydra/scripts/upload.sh $OUT_PATHS $DRV_PATH
