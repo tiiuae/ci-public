@@ -7,10 +7,13 @@ FROM nixos/nix
 
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
-     populate.sh packages.lst upload.sh /setup/
+     populate.sh packages.lst /setup/
 COPY hydra_conf.sh postbuild.py messager.py extracopy.sh schedule.sh /setup/
 
-RUN chmod +x /setup/*.sh
+RUN mkdir -p /home/hydra/scripts
+COPY pbhook.sh upload.sh sign.sh /home/hydra/scripts/
+
+RUN chmod +x /setup/*.sh /home/hydra/scripts/*.sh
 
 ARG CHANNEL
 RUN /setup/channel.sh "$CHANNEL"
