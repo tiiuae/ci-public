@@ -39,3 +39,10 @@ python3 "$HYDRACTL" \
         "$SERVER" AJ \
         -p ghaf-23-05 -i ghaf -D "Ghaf project 23.05" \
         -t flake -f "git+https://github.com/tiiuae/ghaf/?ref=ghaf-23.05"
+
+python3 "$HYDRACTL" "$SERVER" AP -i ghaf-23-06 -D "Ghaf project 23.06"
+
+python3 "$HYDRACTL" \
+        "$SERVER" AJ \
+        -p ghaf-23-06 -i ghaf -D "Ghaf project 23.06" \
+        -t flake -f "git+https://github.com/tiiuae/ghaf/?ref=ghaf-23.06"
