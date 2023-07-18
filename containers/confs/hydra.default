@@ -3,6 +3,11 @@
 
 # Hydra Container configuration, defaults & applying overrides
 
+# Version information for the benefit of external scripts
+# sourcing hydra.default.
+# - "ganymede", the development version
+HC_VERSION_NAME="ganymede"
+
 HC_PORT=3001
 HC_BASE_LABEL="hydra"
 
