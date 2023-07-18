@@ -236,16 +236,34 @@ trap On_exit EXIT
             if [ -f "$FULL" ]; then
                 # Remove prefix to get plain filename
                 FILE="${FULL#/nix/store/}"
+                # Look for matching signature file
+                SIGNF="$(find /nix/store/*"-${FILE}-${EC_THISSRV}.signature" 2>/dev/null | head -n 1)"
+
+                # If not signed yet, try to sign now.
+                if [ -z "${SIGNF}" ] ; then
+                    /home/hydra/scripts/sign.sh "${FULL}"
+                    # TODO: Should sign.sh provide this information directly to us?
+                    SIGNF="$(find /nix/store/*"-${FILE}-${EC_THISSRV}.signature" 2>/dev/null | head -n 1)"
+		fi
+
                 # Remove hash and dash from filename
                 TGT="${FILE:33}"
                 # Also remove image postfix to get the target name
                 TGT="${TGT%"$EC_IMGPSTFX"}"
                 DIR="images/${THISSRV}/${TGT}/"
                 date "+%H:%M:%S Creating directory /upload/${DIR} (Remote mkdir failures are expected for existing directories)"
-                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -b - -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEB_SERVER}" > /dev/null
-                if scp -B -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEB_SERVER}:/upload/${DIR}"; then
+                Sftp_mkdir_cmd "/upload/${DIR}" | sftp -b - -i "$EC_SFTPKEYFIL" "${EC_SFTPUSER}@${WEBSRV}" > /dev/null
+                if scp -B -s -i "$EC_SFTPKEYFIL" "$FULL" "${EC_SFTPUSER}@${WEBSRV}:/upload/${DIR}"; then
                     date "+%H:%M:%S Running trigger for ${FILE}"
                     ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEBSRV}" -- "--sha256 ${DIR}${FILE}"
+                    if [ -n "${SIGNF}" ] ; then
+                        if scp -B -s -i "$EC_SFTPKEYFIL" "$SIGNF" "${EC_SFTPUSER}@${WEBSRV}:/upload/${DIR}"; then
+                            date "+%H:%M:%S Running trigger for ${SIGNF}"
+                            ssh -n -i "$EC_TRIGKEYFIL" "${EC_TRIGUSER}@${WEBSRV}" -- "${DIR}${SIGNF}"
+                        else
+                            date "+%H:%M:%S Copying ${SIGNF} failed"
+                        fi
+                    fi
                 else
                     date "+%H:%M:%S Copying ${FULL} failed"
                 fi
