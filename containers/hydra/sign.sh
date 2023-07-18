@@ -20,7 +20,7 @@ if [ -f /home/hydra/confs/signing.conf ] ; then
     HYDRA_INSTANCE="$(cat /setup/postbuildsrv.txt)"
     mkdir -p "${SIGNTMPDIR}"
 
-    for PTH in $OUT_PATHS $DRV_PATH
+    for PTH in $@
     do
       SHA256SUM="$(sha256sum $PTH)"
       SIGNATURE_FILE="${SIGNTMPDIR}/$(basename "${PTH}")-${HYDRA_INSTANCE}.signature"
