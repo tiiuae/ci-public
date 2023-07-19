@@ -39,5 +39,14 @@ if ! "${AUTODEPLOY_DIR}/copy_hydra_confs.sh" "$(pwd)/confs/hydra/" "$HC_STORE_PA
   exit 1
 fi
 
+if [ -x "confs/hydra/autodeploy_hook" ] ; then
+  # Fragment to run parallel with hydra startup
+  (
+    # Wait for hydra to start up
+    sleep 40
+    ./confs/hydra/autodeploy_hook
+  ) &
+fi
+
 # Actual run
 ./run_hydra.sh
