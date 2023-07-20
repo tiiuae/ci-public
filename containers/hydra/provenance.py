@@ -6,15 +6,13 @@
 """Script for generating SLSA compliant provenance file from hydra postbuild"""
 
 import argparse
-import glob
 import json
-import os
 import subprocess
 from datetime import datetime
 from typing import Optional
 
-BUILD_TYPE_DOCUMENT = "TODO"
-BUILD_ID_DOCUMENT = "TODO"
+BUILD_TYPE_PATH = "https://github.com/tiiuae/ci-public/blob/{0}/provenance/buildtype.md"
+BUILD_ID_PATH = "TODO"
 
 
 def run_command(cmd: list[str], **kwargs):
@@ -33,27 +31,20 @@ def nix_hash(image: str):
     return run_command(["nix-hash", "--base32", "--type", "sha256", image])
 
 
-def parse_subjects(products: list[dict]) -> list[dict]:
-    """Parse the given product path for image files
-    and return them as ResourceDescriptors"""
-    # TODO: use imagePath instead of products for this
+def parse_subjects(image_paths: list[str | None]) -> list[dict]:
+    """return given images as ResourceDescriptors"""
     subjects = []
-    for product in products:
-        output_store = product["path"]
-        if os.path.exists(output_store):
+    for image in image_paths:
+        if image is not None:
             subjects += [
                 {
-                    "name": file,
-                    "uri": f"{output_store}/{file}",
+                    "name": image.rsplit("/", 1)[-1],
+                    "uri": image,
                     "digest": {
-                        "sha256": nix_hash(f"{output_store}/{file}"),
+                        "sha256": nix_hash(image),
                     },
                 }
-                for file in os.listdir(output_store)
             ]
-        else:
-            # built image is not available, create best effort subject
-            subjects.append({"uri": output_store})
 
     return subjects
 
@@ -80,69 +71,43 @@ def resolve_build_dependencies(sbom_path: str | None):
     ]
 
 
-def list_byproducts(resultsdir: str | None):
-    """Generate ResourceDescriptor for each file in the result directory
-    as these files can be classified as byproducts of the build"""
-    if resultsdir is None:
-        return []
+def builder_dependencies(commit_hash: str | None):
+    """Get current version of the build system"""
+    deps = []
+    if commit_hash:
+        deps.append(
+            {
+                "uri": "https://github.com/tiiuae/ci-public",
+                "digest": {
+                    "gitCommit": commit_hash,
+                },
+            }
+        )
 
-    return [
-        {
-            "name": file.rsplit("/")[-1],
-            "uri": file,
-        }
-        for file in glob.glob(resultsdir + "/*", recursive=True)
-    ]
-
-
-def builder_git_rev(workspace: str | None):
-    """Get git remote url and current commit hash of the build system"""
-    # TODO: make this use git commit id provided by container build
-    if workspace is None:
-        return []
-
-    url = run_command(
-        ["git", "remote", "get-url", "origin"],
-        cwd=workspace,
-    )
-    commit_hash = run_command(
-        ["git", "rev-parse", "HEAD"],
-        cwd=workspace,
-    )
-
-    return [
-        {
-            "uri": url,
-            "digest": {
-                "gitCommit": commit_hash,
-            },
-        }
-    ]
+    return deps
 
 
 def generate_provenance(
-    build_info_path: str,
-    byproduct_dir: str,
+    build_info: dict,
     sbom_path: Optional[str],
-    builder_workspace: Optional[str],
+    ci_version: Optional[str],
 ):
     """Generate the provenance file from given inputs"""
-    with open(build_info_path, "rb") as file:
-        build_info = json.load(file)
-
-    build_id = build_info["build"]
-    schema = {
+    return {
         "_type": "https://in-toto.io/Statement/v1",
-        "subject": parse_subjects(build_info["products"]),
+        "subject": parse_subjects([build_info.get("imageLink")]),
         "predicateType": "https://slsa.dev/provenance/v1",
         "predicate": {
             "buildDefinition": {
-                "buildType": BUILD_TYPE_DOCUMENT,
-                "externalParameters": {},
-                "internalParameters": {
+                "buildType": BUILD_TYPE_PATH.format(ci_version),
+                "externalParameters": {
+                    "FlakeURI": None,  # TODO: Find a way to get this
                     "system": build_info["system"],
-                    "jobset": build_info["jobset"],
+                    "release": build_info["nixName"],
+                },
+                "internalParameters": {
                     "project": build_info["project"],
+                    "jobset": build_info["jobset"],
                     "job": build_info["job"],
                     "drvPath": build_info["drvPath"],
                 },
@@ -150,11 +115,11 @@ def generate_provenance(
             },
             "runDetails": {
                 "builder": {
-                    "id": BUILD_ID_DOCUMENT,
-                    "builderDependencies": builder_git_rev(builder_workspace),
+                    "id": BUILD_ID_PATH,
+                    "builderDependencies": builder_dependencies(ci_version),
                 },
                 "metadata": {
-                    "invocationId": build_id,
+                    "invocationId": build_info["build"],
                     "startedOn": datetime.fromtimestamp(
                         build_info["startTime"],
                     ).isoformat(),
@@ -162,13 +127,11 @@ def generate_provenance(
                         build_info["stopTime"],
                     ).isoformat(),
                 },
-                "byproducts": list_byproducts(byproduct_dir),
+                "byproducts": [],
             },
         },
-        "hydra_buildInfo": build_info
+        "hydra_buildInfo": build_info,
     }
-
-    return schema
 
 
 def main():
@@ -179,26 +142,22 @@ def main():
     )
     parser.add_argument("build_info")
     parser.add_argument("--sbom")
-    parser.add_argument("--byproduct-dir")
+    parser.add_argument("--ci-version")
     parser.add_argument("--output-dir")
-    parser.add_argument("--builder-workspace")
     args = parser.parse_args()
-    schema = generate_provenance(
-        args.build_info,
-        args.byproduct_dir,
-        args.sbom,
-        args.builder_workspace,
-    )
 
-    build_id = schema["predicate"]["runDetails"]["metadata"]["invocationId"]
-    outpath = ""
+    with open(args.build_info, "rb") as file:
+        build_info = json.load(file)
+
+    schema = generate_provenance(build_info, args.sbom, args.ci_version)
+
+    outpath = args.output_dir or ""
     if args.output_dir:
-        outpath = args.output_dir
         if not args.output_dir.endswith("/"):
             outpath += "/"
 
     with open(
-        f"{outpath}slsa_provenance_{build_id}.json",
+        f"{outpath}slsa_provenance_{build_info['build']}.json",
         "w",
         encoding="utf=8",
     ) as file:

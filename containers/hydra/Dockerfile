@@ -49,6 +49,9 @@ COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py extracopy.sh \
 RUN chmod +x /setup/*.sh
 RUN chmod +x /setup/messager.py
 
+ARG CI_COMMIT_HASH
+RUN echo "${CI_COMMIT_HASH}" > /setup/ci-version
+
 ARG CONTAINER_DEBUG=false
 RUN touch /etc/container-debug-${CONTAINER_DEBUG}
 

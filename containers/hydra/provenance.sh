@@ -21,8 +21,9 @@ sbomnix "$IMAGE" --type=buildtime --depth=1
 
 # generate the provenance file
 python3 /setup/provenance.py "$BUILDINFO" \
-	--output-dir "$OUTPUT_DIR" \
-	--sbom sbom.cdx.json
+    --output-dir "$OUTPUT_DIR" \
+    --sbom sbom.cdx.json \
+    --ci-version "$(cat /setup/ci-version)"
 
 # clean up sbom files
 # they are no longer needed
