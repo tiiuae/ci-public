@@ -29,7 +29,7 @@ Parameters for jobset:
 | --------- | ---- | ----------- |
 | `Flake URI` | URI | URI to the flake to be built, such as `git+https://github.com/tiiuae/ghaf/` |
 
-Parameters for evaluation:
+Parameters for job:
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
