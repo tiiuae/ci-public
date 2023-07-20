@@ -7,8 +7,8 @@ FROM nixos/nix
 
 RUN mkdir -p /setup/
 COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
-     populate.sh packages.lst /setup/
-COPY hydra_conf.sh postbuild.py messager.py extracopy.sh schedule.sh /setup/
+     populate.sh packages.lst install-sbomnix.sh \
+     hydra_conf.sh postbuild.py messager.py extracopy.sh schedule.sh /setup/
 
 RUN mkdir -p /home/hydra/scripts
 COPY pbhook.sh upload.sh sign.sh /home/hydra/scripts/
@@ -26,7 +26,8 @@ ARG HYDRA_URL
 
 RUN nix-env -i hydra -i postgresql -i jq -i gnused -i python3
 
-RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
+RUN /setup/install-sbomnix.sh && \
+    /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
     /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
     /setup/hydra_conf.sh "$PB_SRV" "$HYDRA_URL"
 
