@@ -11,7 +11,7 @@ COPY channel.sh user.sh nix_conf.sh postgres.sh hydra.sh \
      hydra_conf.sh postbuild.py messager.py extracopy.sh schedule.sh /setup/
 
 RUN mkdir -p /home/hydra/scripts
-COPY pbhook.sh upload.sh sign.sh /home/hydra/scripts/
+COPY pbhook.sh upload.sh sign.sh provenance.sh provenance.py /home/hydra/scripts/
 
 RUN chmod +x /setup/*.sh /home/hydra/scripts/*.sh
 
