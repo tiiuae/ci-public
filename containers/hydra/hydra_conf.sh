@@ -17,7 +17,4 @@
   echo "using_frontend_proxy = 1"
 ) > /setup/hydra.conf
 
-# Install python3 that the postbuild.py will need when used
-nix-env -i python3
-
 echo "${1}" > /setup/postbuildsrv.txt

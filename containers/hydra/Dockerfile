@@ -24,7 +24,7 @@ ARG HYDRA_REMOTE_BUILDERS
 ARG PB_SRV
 ARG HYDRA_URL
 
-RUN nix-env -i hydra -i postgresql -i jq -i gnused
+RUN nix-env -i hydra -i postgresql -i jq -i gnused -i python3
 
 RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
     /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
