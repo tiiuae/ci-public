@@ -155,19 +155,20 @@ def main(argv: list[str]):
 
         nixbuildinfo = nix_store_add(infofn)
 
-        subprocess.run(["/setup/sign.sh", nixbuildinfo]);
+        subprocess.run(["/setup/sign.sh", nixbuildinfo])
 
         # Print the build-info nix store path so that it can be scraped
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
+        subprocess.run(
+            ["/setup/provenance.sh", niximglink, nixbuildinfo, tmpdir],
+            stdout=subprocess.PIPE,
+        )
+        provenancelink = nix_store_add(f"{tmpdir}/slsa_provenance_{build}.json")
+        print(f'PROVENANCE_LINK="{provenancelink}"')
+
     perror(None, 0)
-
-    subprocess.run(
-        ["/setup/provenance.sh", niximglink, nixbuildinfo],
-        stdout=subprocess.PIPE,
-    )
-
 
 # ------------------------------------------------------------------------
 # Run main when executed from command line
