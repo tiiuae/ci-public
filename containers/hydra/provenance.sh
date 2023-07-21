@@ -1,19 +1,19 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 set -x
 
+# inputs
 IMAGE=$1
 BUILDINFO=$2
+OUTPUT_DIR=$3
+
 BUILD_ID=$(jq -r '.build' "$BUILDINFO")
-OUTPUT_DIR="/home/hydra/results/$BUILD_ID"
 
 echo "PROVENANCE FOR BUILD $BUILD_ID"
 
-# create output dir in hydra home
-mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR" || exit
 
 # generate buildtime sbom
