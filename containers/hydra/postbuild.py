@@ -161,6 +161,7 @@ def main(argv: list[str]):
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
 
+        # generate provenance
         provenance_name = f"{hydra}-{build}-provenance.json"
         result = subprocess.run(
             ["/setup/provenance.sh", niximglink, nixbuildinfo, tmpdir, provenance_name],
@@ -172,7 +173,15 @@ def main(argv: list[str]):
                 f"\n{result.stderr.decode('utf-8')}"
             )
 
+        # add provenance to nix store
         provenancelink = nix_store_add(f"{tmpdir}/{provenance_name}")
+
+        # upload provenance to the cache
+        subprocess.run(
+            ["/setup/upload.sh", provenancelink],
+            stdout=subprocess.PIPE,
+        )
+
         print(f'PROVENANCE_LINK="{provenancelink}"')
 
     perror(None, 0)
