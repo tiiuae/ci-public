@@ -49,17 +49,10 @@ def parse_subjects(image_paths: list[str | None]) -> list[dict]:
     return subjects
 
 
-def resolve_build_dependencies(sbom_path: str | None):
+def resolve_build_dependencies(sbom: dict | None):
     """Parse the sbom for dependencies
     and return them as ResourceDescriptors"""
-    if sbom_path is None:
-        return []
-
-    try:
-        with open(sbom_path, "rb") as file:
-            sbom = json.load(file)
-    except FileNotFoundError as e:
-        print(e)
+    if sbom is None:
         return []
 
     return [
@@ -141,27 +134,22 @@ def main():
         description="Convert hydra build_info into provenance SLSA 1.0",
     )
     parser.add_argument("build_info")
-    parser.add_argument("--sbom")
+    parser.add_argument("--sbom", type=argparse.FileType("r", encoding="UTF-8"))
+    parser.add_argument("--out", type=argparse.FileType("w", encoding="UTF-8"))
     parser.add_argument("--ci-version")
-    parser.add_argument("--output-dir")
     args = parser.parse_args()
 
     with open(args.build_info, "rb") as file:
         build_info = json.load(file)
 
-    schema = generate_provenance(build_info, args.sbom, args.ci_version)
+    sbom = json.load(args.sbom) if args.sbom else None
+    schema = generate_provenance(build_info, sbom, args.ci_version)
 
-    outpath = args.output_dir or ""
-    if args.output_dir:
-        if not args.output_dir.endswith("/"):
-            outpath += "/"
-
-    with open(
-        f"{outpath}slsa_provenance_{build_info['build']}.json",
-        "w",
-        encoding="utf=8",
-    ) as file:
-        file.write(json.dumps(schema, indent=4))
+    if args.out:
+        args.out.write(json.dumps(schema, indent=4))
+        print("Wrote provenance into {output}")
+    else:
+        print(json.dumps(schema, indent=4))
 
 
 if __name__ == "__main__":

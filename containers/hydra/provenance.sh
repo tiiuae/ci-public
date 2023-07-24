@@ -3,12 +3,11 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-set -x
-
 # inputs
 IMAGE=$1
 BUILDINFO=$2
 OUTPUT_DIR=$3
+OUTPUT_FILENAME=$4
 
 BUILD_ID=$(jq -r '.build' "$BUILDINFO")
 
@@ -21,7 +20,7 @@ sbomnix "$IMAGE" --type=buildtime --depth=1
 
 # generate the provenance file
 python3 /setup/provenance.py "$BUILDINFO" \
-    --output-dir "$OUTPUT_DIR" \
+    --out "$OUTPUT_DIR/$OUTPUT_FILENAME" \
     --sbom sbom.cdx.json \
     --ci-version "$(cat /setup/ci-version)"
 
