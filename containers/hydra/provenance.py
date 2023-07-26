@@ -147,7 +147,6 @@ def main():
 
     if args.out:
         args.out.write(json.dumps(schema, indent=4))
-        print("Wrote provenance into {output}")
     else:
         print(json.dumps(schema, indent=4))
 

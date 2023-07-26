@@ -21,6 +21,7 @@ imagefn = "nixos.img"
 nixstore = "nix-store"
 linksuffix = "-nixos.img"
 infosuffix = "-build-info.json"
+provenancesuffix = "-provenance.json"
 
 
 # ------------------------------------------------------------------------
@@ -41,6 +42,23 @@ def perror(txt, code=1):
     if txt is not None:
         print("Quitting early")
         sys.exit(code)
+
+
+# ------------------------------------------------------------------------
+# Sign the given file
+# path = path to file/dir to be signed
+# returns nix store path of the signature
+# ------------------------------------------------------------------------
+def create_signature(path: str) -> str:
+    result = subprocess.run(["/setup/sign.sh", path], stdout=subprocess.PIPE)
+
+    if result.returncode != 0:
+        perror(
+            "sign.sh {path} failed ({result.returncode}):"
+            f"\n{result.stderr.decode('utf-8')}"
+        )
+
+    return result.stdout.decode("utf-8").strip()
 
 
 # ------------------------------------------------------------------------
@@ -84,6 +102,7 @@ def main(argv: list[str]):
     global nixstore
     global linksuffix
     global infosuffix
+    global provenancesuffix
 
     # HYDRA_JSON is set by Hydra to point to build information .json file
     jsonfn = os.getenv("HYDRA_JSON")
@@ -106,13 +125,20 @@ def main(argv: list[str]):
 
     # Allow override of the default info file suffix
     infosuffix = os.getenv("POSTBUILD_INFOSUFFIX", infosuffix)
+    
+    # Allow override of the provenance file suffix
+    infosuffix = os.getenv("POSTBUILD_PROVENANCE_SUFFIX", provenancesuffix)
 
     # Load build information
     with open(jsonfn) as jsonf:
         binfo = json.load(jsonf)
 
     # Check status of the build, we are interested only in finished builds
-    if not binfo["finished"] or binfo["buildStatus"] != 0 or binfo["event"] != "buildFinished":
+    if (
+        not binfo["finished"]
+        or binfo["buildStatus"] != 0
+        or binfo["event"] != "buildFinished"
+    ):
         perror("Unexpected build status")
 
     # Find output path
@@ -132,8 +158,10 @@ def main(argv: list[str]):
 
     target = binfo["job"].split(".")[0]
     build = binfo["build"]
+
     linkname = f"{target}{linksuffix}"
     infoname = f"{hydra}-{build}{infosuffix}"
+    provenancename = f"{hydra}-{build}{provenancesuffix}"
 
     # Create link and info file in a temporary directory
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -143,7 +171,6 @@ def main(argv: list[str]):
         # Create symlink to image and add it to nix store
         os.symlink(imgf, linkfn)
         niximglink = nix_store_add(linkfn)
-
         print(f'POSTBUILD_LINK="{niximglink}"')
 
         # Add symlink info also to build information
@@ -155,16 +182,20 @@ def main(argv: list[str]):
 
         nixbuildinfo = nix_store_add(infofn)
 
-        subprocess.run(["/setup/sign.sh", nixbuildinfo])
-
         # Print the build-info nix store path so that it can be scraped
         # from Hydra web ui run command logs automatically.
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
+        print(f'POSTBUILD_INFO_SIGNATURE="{create_signature(nixbuildinfo)}"')
 
         # generate provenance
-        provenance_name = f"{hydra}-{build}-provenance.json"
         result = subprocess.run(
-            ["/setup/provenance.sh", niximglink, nixbuildinfo, tmpdir, provenance_name],
+            [
+                "/setup/provenance.sh",
+                niximglink,  # image path
+                nixbuildinfo,  # buildinfo path
+                tmpdir,  # working dir for provenance and sbom
+                provenancename,  # file to save the provenance to
+            ],
             stdout=subprocess.PIPE,
         )
         if result.returncode != 0:
@@ -173,18 +204,12 @@ def main(argv: list[str]):
                 f"\n{result.stderr.decode('utf-8')}"
             )
 
-        # add provenance to nix store
-        provenancelink = nix_store_add(f"{tmpdir}/{provenance_name}")
-
-        # upload provenance to the cache
-        subprocess.run(
-            ["/setup/upload.sh", provenancelink],
-            stdout=subprocess.PIPE,
-        )
-
-        print(f'PROVENANCE_LINK="{provenancelink}"')
+        # print the output of provenance.sh
+        # PROVENANCE_LINK and PROVENANCE_SIGNATURE_LINK
+        print(result.stdout.decode("utf-8").strip())
 
     perror(None, 0)
+
 
 # ------------------------------------------------------------------------
 # Run main when executed from command line
