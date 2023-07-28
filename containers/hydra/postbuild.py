@@ -127,7 +127,7 @@ def main(argv: list[str]):
     infosuffix = os.getenv("POSTBUILD_INFOSUFFIX", infosuffix)
     
     # Allow override of the provenance file suffix
-    infosuffix = os.getenv("POSTBUILD_PROVENANCE_SUFFIX", provenancesuffix)
+    provenancesuffix = os.getenv("POSTBUILD_PROVENANCE_SUFFIX", provenancesuffix)
 
     # Load build information
     with open(jsonfn) as jsonf:
