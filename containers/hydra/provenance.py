@@ -1,3 +1,6 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p "python3.withPackages(ps: [ ps.requests ])"
+
 # ------------------------------------------------------------------------
 # SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
@@ -11,8 +14,36 @@ import subprocess
 from datetime import datetime
 from typing import Optional
 
+import requests
+
 BUILD_TYPE_PATH = "https://github.com/tiiuae/ci-public/blob/{0}/provenance/buildtype.md"
 BUILD_ID_PATH = "TODO"
+
+
+def hydra_api(server: str, path: str) -> dict | None:
+    """GET json data from our hydra instance"""
+    if server is None:
+        return None
+
+    response = requests.get(
+        server + path,
+        headers={"Content-Type": "application/json"},
+    )
+    if response.status_code == 200:
+        return response.json()
+
+    print(f"{server}{path} returned {response.status_code}")
+    return None
+
+
+def flake_uri(server: str, build_id: int) -> str:
+    """Get the flake URI from hydra"""
+    build_data = hydra_api(server, f"/build/{build_id}")
+    if build_data:
+        eval_data = hydra_api(server, f"/eval/{build_data['jobsetevals'][0]}")
+        if eval_data:
+            return eval_data["flake"]
+    return None
 
 
 def run_command(cmd: list[str], **kwargs):
@@ -84,6 +115,7 @@ def generate_provenance(
     build_info: dict,
     sbom_path: Optional[str],
     ci_version: Optional[str],
+    hydra_url: Optional[str],
 ):
     """Generate the provenance file from given inputs"""
     return {
@@ -94,15 +126,15 @@ def generate_provenance(
             "buildDefinition": {
                 "buildType": BUILD_TYPE_PATH.format(ci_version),
                 "externalParameters": {
-                    "FlakeURI": None,  # TODO: Find a way to get this
-                    "system": build_info["system"],
-                    "release": build_info["nixName"],
+                    "FlakeURI": flake_uri(hydra_url, build_info["build"]),
+                    "target": build_info["job"],
                 },
                 "internalParameters": {
+                    "system": build_info["system"],
                     "project": build_info["project"],
                     "jobset": build_info["jobset"],
-                    "job": build_info["job"],
                     "drvPath": build_info["drvPath"],
+                    "release": build_info["nixName"],
                 },
                 "resolvedDependencies": resolve_build_dependencies(sbom_path),
             },
@@ -137,13 +169,14 @@ def main():
     parser.add_argument("--sbom", type=argparse.FileType("r", encoding="UTF-8"))
     parser.add_argument("--out", type=argparse.FileType("w", encoding="UTF-8"))
     parser.add_argument("--ci-version")
+    parser.add_argument("--hydra-url", default="http://localhost:3000")
     args = parser.parse_args()
 
     with open(args.build_info, "rb") as file:
         build_info = json.load(file)
 
     sbom = json.load(args.sbom) if args.sbom else None
-    schema = generate_provenance(build_info, sbom, args.ci_version)
+    schema = generate_provenance(build_info, sbom, args.ci_version, args.hydra_url)
 
     if args.out:
         args.out.write(json.dumps(schema, indent=4))

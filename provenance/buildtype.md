@@ -23,18 +23,10 @@ Read more about hydra from the [hydra manual]
 
 [External parameters]: #external-parameters
 
-Parameters for jobset:
-
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| `Flake URI` | URI | URI to the flake to be built, such as `git+https://github.com/tiiuae/ghaf/` |
-
-Parameters for job:
-
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| `system`  | string | The system the image will be built for such as `x86_64-linux` or `aarch64-linux`. |
-| `release` | string | The release to be built such as `nixos-disk-image` or `nixos-vm`. |
+| `FlakeURI`| URI | URI to the flake to be built, such as `git+https://github.com/tiiuae/ghaf/` |
+| `target`  | string | The target job for this build |
 
 ### Internal parameters
 
@@ -42,10 +34,11 @@ All internal parameters SHOULD be present for every build.
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
+| `system`  | string | The system the image will be built for such as `x86_64-linux` or `aarch64-linux`. |
 | `project` | string | The project this jobset is a part of |
 | `jobset`  | string | The jobset this evaluation is a part of |
-| `job`     | string | The job that builds this image |
 | `drvPath` | path   | Path to the built derivation in the nix store |
+| `release` | string | The release to be built such as `nixos-disk-image` or `nixos-vm`. |
 
 ### Resolved dependencies
 
