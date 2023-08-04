@@ -48,6 +48,7 @@ COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py extracopy.sh \
 # make sure everything is executable
 RUN chmod +x /setup/*.sh
 RUN chmod +x /setup/messager.py
+RUN chmod +x /setup/provenance.py
 
 ARG CI_COMMIT_HASH
 RUN echo "${CI_COMMIT_HASH}" > /setup/ci-version

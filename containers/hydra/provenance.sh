@@ -18,7 +18,7 @@ cd "$OUTPUT_DIR" || exit
 sbomnix "$IMAGE" --type=buildtime --depth=1 > /dev/null 2>&1
 
 # generate the provenance file
-python3 /setup/provenance.py "$BUILDINFO" \
+/setup/provenance.py "$BUILDINFO" \
     --out "$OUT" \
     --sbom sbom.cdx.json \
     --ci-version "$(cat /setup/ci-version)"
