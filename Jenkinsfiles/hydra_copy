@@ -65,7 +65,7 @@ pipeline {
                         sh "mkdir -p ${resultsPath}/${data[0]}"
                         sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
 
-                        if ("${buildData['Job']}".contains("orin")) {
+                        if ("${buildData['Job']}".contains("orin-agx")) {
                             //Trigger Orin post processing pipeline
                             try {
                                 build job: "${orinProcessingJob}", parameters: [
