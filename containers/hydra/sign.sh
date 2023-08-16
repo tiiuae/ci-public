@@ -32,7 +32,7 @@ function Check_prerequisites {
 
 # Calculate sha256 for a file or a directory
 function Calc_sha256sum {
-    python3 sha256tree.py --plain -- "$1"
+    python3 /setup/sha256tree.py --plain -- "$1"
 }
 
 case "$1" in
