@@ -42,7 +42,7 @@ RUN /setup/install-sbomnix.sh
 
 # copy all other setup scripts that will be used later
 COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py extracopy.sh \ 
-    schedule.sh messager.py provenance.sh provenance.py \
+    schedule.sh messager.py provenance.sh provenance.py sha256tree.py \
     /setup/
 
 # make sure everything is executable
