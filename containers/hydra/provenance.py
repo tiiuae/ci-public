@@ -10,14 +10,20 @@
 
 import argparse
 import json
+import os
 import subprocess
 from datetime import datetime
 from typing import Optional
 
 import requests
 
-BUILD_TYPE_PATH = "https://github.com/tiiuae/ci-public/blob/{0}/provenance/buildtype.md"
-BUILD_ID_PATH = "TODO"
+HYDRA_PUBLIC_URL = os.environ.get("HYDRA_URL", "http://localhost:3000").rstrip("/")
+HYDRA_NAME = os.environ.get("HYDRA_NAME", "UNKNOWN")
+
+BUILD_TYPE_PATH = (
+    "https://github.com/tiiuae/ci-public/blob/{hash}/provenance/buildtype.md"
+)
+BUILD_ID_PATH = "{hydra_public_url}/build/{build_id}"
 
 
 def hydra_api(server: str, path: str) -> dict | None:
@@ -124,12 +130,13 @@ def generate_provenance(
         "predicateType": "https://slsa.dev/provenance/v1",
         "predicate": {
             "buildDefinition": {
-                "buildType": BUILD_TYPE_PATH.format(ci_version),
+                "buildType": BUILD_TYPE_PATH.format(hash=ci_version),
                 "externalParameters": {
                     "FlakeURI": flake_uri(hydra_url, build_info["build"]),
                     "target": build_info["job"],
                 },
                 "internalParameters": {
+                    "server": HYDRA_NAME,
                     "system": build_info["system"],
                     "project": build_info["project"],
                     "jobset": build_info["jobset"],
@@ -140,7 +147,10 @@ def generate_provenance(
             },
             "runDetails": {
                 "builder": {
-                    "id": BUILD_ID_PATH,
+                    "id": BUILD_ID_PATH.format(
+                        hydra_public_url=HYDRA_PUBLIC_URL,
+                        build_id=build_info["build"],
+                    ),
                     "builderDependencies": builder_dependencies(ci_version),
                 },
                 "metadata": {

@@ -177,6 +177,11 @@ do
  HOSTS+="--add-host=$host "
 done
 
+echo "# these are config values copied from setup
+export HYDRA_URL="$HYDRA_URL"
+export HYDRA_NAME="$HC_PB_SRV"
+" > "${STORE}/home/setup_config"
+
 if [ "$CONTAINER_DEBUG" = "true" ] ; then
   # Debug run
   docker run \
