@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 // SPDX-License-Identifier: Apache-2.0
 
-buildResults = [:]
+//buildResults = [:]
 
 vulnixJob = ''
 sbomJob = ''
@@ -22,9 +22,16 @@ pipeline {
                     sbomJob = "${splitted[0]}/Supply_chain_security/sbomnix"
                     vulnsdiffJob = "${splitted[0]}/Supply_chain_security/vulnsdiff"
                     provenanceJob = "${splitted[0]}/Supply_chain_security/provenance"
-                    testJob = "${splitted[0]}/Testing/NUC_x86/nuc_x86_test_set"
                     level = "${splitted[0]}"
-                    currentBuild.description = "${params.server} NUC BuildID: ${params.buildID}"
+                    if (params.device == "NUC") {
+                      testJob = "${splitted[0]}/Testing/NUC_x86/nuc_x86_test_set"
+                      currentBuild.description = "${params.server} ${params.device} BuildID: ${params.buildID}"
+                    } else if (params.device == "Orin"){
+                      testJob = "${splitted[0]}/Testing/Orin_arm/orin_arm_test_set"
+                      currentBuild.description = "${params.server} ${params.device} BuildID: ${params.buildID}"
+                    } else {
+                      currentBuild.description = "${params.server} ${params.device} BuildID: ${params.buildID}"
+                    }
                 }
              }
         }
@@ -40,7 +47,7 @@ pipeline {
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      buildResults."vulnix" = "SUCCESS"
+                      //buildResults."vulnix" = "SUCCESS"
                       echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
                       catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
@@ -62,7 +69,7 @@ pipeline {
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      buildResults."sbom" = "SUCCESS"
+                      //buildResults."sbom" = "SUCCESS"
                       echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
                       catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
@@ -85,7 +92,7 @@ pipeline {
                           ]
                       )
                       if(build.result == "SUCCESS") {
-                        buildResults."vulnsdiff" = "SUCCESS"
+                        //buildResults."vulnsdiff" = "SUCCESS"
                         echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                       } else {
                         catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
@@ -93,30 +100,6 @@ pipeline {
                         }
                       }
                    }
-                }
-            }
-        }
-        stage('Nuc Tests') {
-            steps {
-                script {
-                    build = build(
-                        job: "${testJob}", propagate: false,
-                        parameters: [
-                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
-                          [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                          [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
-                        ]
-                    )
-                    if(build.result == "SUCCESS") {
-                      buildResults."nuc" = "SUCCESS"
-                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
-                    } else {
-                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                    error("NUC testset build failed")
-                      }
-                    }
                 }
             }
         }
@@ -133,12 +116,40 @@ pipeline {
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      buildResults."provenance" = "SUCCESS"
+                      //buildResults."provenance" = "SUCCESS"
                       echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
                       catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
                                     error("provenance build failed")
                       }
+                    }
+                }
+            }
+        }
+        stage('HW Tests') {
+            steps {
+                script {
+                    if(params.hw_tests) {
+                        build = build(
+                            job: "${testJob}", propagate: false,
+                            parameters: [
+                              [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                              [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                              [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
+                              [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                              [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
+                            ]
+                        )
+                        if(build.result == "SUCCESS") {
+                          //buildResults."hwTest" = "SUCCESS"
+                          echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        } else {
+                          catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
+                                        error("NUC testset build failed")
+                          }
+                        }
+                    } else {
+                        println("No HW tests for this build!")
                     }
                 }
             }

@@ -5,6 +5,7 @@
 resultsPath = ''
 nucProcessingJob = ''
 orinProcessingJob = ''
+riscvProcessingJob = ''
 
 pipeline {
     agent {label "${params.label}"}
@@ -20,6 +21,7 @@ pipeline {
                     def splitted = "${JOB_NAME}".split('/')
                     nucProcessingJob = "${splitted[0]}/post_processing_nuc"
                     orinProcessingJob = "${splitted[0]}/post_processing_orin"
+                    riscvProcessingJob = "${splitted[0]}/post_processing_riscv
                 }
              }
         }
@@ -75,7 +77,9 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
-                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                    [$class: 'StringParameterValue', name: 'device', value: "Orin"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
@@ -90,6 +94,24 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                    [$class: 'StringParameterValue', name: 'device', value: "NUC"]
+                                ]
+                            }catch (err) {
+                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            }
+                        } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug.x86_64-linux")) {
+                            //Trigger generic-x86_64 post processing pipeline
+                            try {
+                                build job: "${riscvProcessingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
                                 ]
                             }catch (err) {
