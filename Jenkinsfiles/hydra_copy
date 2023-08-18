@@ -3,9 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 resultsPath = ''
-nucProcessingJob = ''
-orinProcessingJob = ''
-riscvProcessingJob = ''
+processingJob = ''
 
 pipeline {
     agent {label "${params.label}"}
@@ -19,9 +17,7 @@ pipeline {
                          resultsPath = "/home/${params.label}/Jenkins-agent/workspace/results/${params.server}"
                     }
                     def splitted = "${JOB_NAME}".split('/')
-                    nucProcessingJob = "${splitted[0]}/post_processing_nuc"
-                    orinProcessingJob = "${splitted[0]}/post_processing_orin"
-                    riscvProcessingJob = "${splitted[0]}/post_processing_riscv
+                    processingJob = "${splitted[0]}/post_processing"
                 }
              }
         }
@@ -70,7 +66,7 @@ pipeline {
                         if ("${buildData['Job']}".contains("orin-agx")) {
                             //Trigger Orin post processing pipeline
                             try {
-                                build job: "${orinProcessingJob}", parameters: [
+                                build job: "${processingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
@@ -87,7 +83,7 @@ pipeline {
                         } else if ("${buildData['Job']}".contains("generic-x86")) {
                             //Trigger generic-x86_64 post processing pipeline
                             try {
-                                build job: "${nucProcessingJob}", parameters: [
+                                build job: "${processingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
@@ -104,7 +100,7 @@ pipeline {
                         } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug.x86_64-linux")) {
                             //Trigger generic-x86_64 post processing pipeline
                             try {
-                                build job: "${riscvProcessingJob}", parameters: [
+                                build job: "${processingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
