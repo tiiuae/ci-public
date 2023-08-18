@@ -22,7 +22,7 @@ HC_PB_SRV="hydra"
 HC_STORE_PATH="./store"
 
 # URL of the Hydra instance
-HYDRA_URL="localhost:${HC_PORT}"
+HYDRA_URL="http://localhost:${HC_PORT}"
 
 # If "no",  build only locally.
 # If "yes", will use <store>/home/confs/machines file, which then must be provided

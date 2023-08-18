@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 # inputs
 IMAGE=$1
 BUILDINFO=$2
@@ -16,6 +18,8 @@ cd "$OUTPUT_DIR" || exit
 
 # generate buildtime sbom (and suppress noisy stdout)
 sbomnix "$IMAGE" --type=buildtime --depth=1 > /dev/null 2>&1
+
+. $HOME/setup_config
 
 # generate the provenance file
 /setup/provenance.py "$BUILDINFO" \
