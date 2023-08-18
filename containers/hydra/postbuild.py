@@ -1,13 +1,17 @@
 #!/usr/bin/env pipenv-shebang
-# ------------------------------------------------------------------------
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-# SPDX-License-Identifier: Apache-2.0
-# ------------------------------------------------------------------------
-# Hydra post build hook script
-#
-# Creates build information json file and a symbolic link to the image file
-# with human understandable name.
-# ------------------------------------------------------------------------
+"""
+------------------------------------------------------------------------
+SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+SPDX-License-Identifier: Apache-2.0
+------------------------------------------------------------------------
+
+Hydra post build hook script
+
+Creates build information json file and a symbolic link to the image file
+with human understandable name.
+------------------------------------------------------------------------
+"""
+
 import json
 import os
 import subprocess
@@ -17,40 +21,46 @@ import tempfile
 # ------------------------------------------------------------------------
 # Global variables
 # ------------------------------------------------------------------------
-imagefn = "nixos.img"
-nixstore = "nix-store"
-linksuffix = "-nixos.img"
-infosuffix = "-build-info.json"
-provenancesuffix = "-provenance.json"
+IMAGEFN = "nixos.img"
+NIXSTORE = "nix-store"
+LINKSUFFIX = "-nixos.img"
+INFOSUFFIX = "-build-info.json"
+PROVENANCESUFFIX = "-provenance.json"
+ENCOD = "UTF-8"
+JSONFN = None
+HYDRA = None
+MESSAGESCRIPT = None
 
 
-# ------------------------------------------------------------------------
-# Prints an error message and exits
-# txt = Error message
-# code = optional exit code
 # ------------------------------------------------------------------------
 def perror(txt, code=1):
+    """
+    Prints an error message and exits
+    txt = Error message
+    code = optional exit code
+    """
+
     if txt is not None:
         print(txt, file=sys.stderr)
 
-    messagescript = os.getenv("POSTBUILD_MSGSCRIPT")
-    if messagescript is not None:
-        ret = os.system(messagescript)
+    if MESSAGESCRIPT is not None:
+        ret = os.system(MESSAGESCRIPT)
         if ret != 0:
             print(f"Message script return code: {ret}", file=sys.stderr)
 
-    if txt is not None:
-        print("Quitting early")
-        sys.exit(code)
+    sys.exit(code)
 
 
-# ------------------------------------------------------------------------
-# Sign the given file
-# path = path to file/dir to be signed
-# returns nix store path of the signature
 # ------------------------------------------------------------------------
 def create_signature(path: str) -> str:
-    result = subprocess.run(["/setup/sign.sh", path], stdout=subprocess.PIPE)
+    """
+    Sign the given file
+    path = path to file/dir to be signed
+    returns nix store path of the signature
+    """
+
+    result = subprocess.run(["/setup/sign.sh", path],
+                            stdout=subprocess.PIPE, check=False)
 
     if result.returncode != 0:
         perror(
@@ -62,16 +72,19 @@ def create_signature(path: str) -> str:
 
 
 # ------------------------------------------------------------------------
-# Add given path to nix store
-# path = path to file/dir to be added
-# returns nix store path for added file/dir
-# ------------------------------------------------------------------------
 def nix_store_add(path: str) -> str:
-    result = subprocess.run([nixstore, "--add", path], stdout=subprocess.PIPE)
+    """
+    Add given path to nix store
+    path = path to file/dir to be added
+    returns nix store path for added file/dir
+    """
+
+    result = subprocess.run([NIXSTORE, "--add", path],
+                            stdout=subprocess.PIPE, check=False)
 
     if result.returncode != 0:
         perror(
-            f"{nixstore} --add {path} failed ({result.returncode}):"
+            f"{NIXSTORE} --add {path} failed ({result.returncode}):"
             f"\n{result.stderr.decode('utf-8')}"
         )
 
@@ -79,58 +92,29 @@ def nix_store_add(path: str) -> str:
 
 
 # ------------------------------------------------------------------------
-# Remove given path from nix store (if it exists, no error if nonexistent)
-# path = nix store path to remove
-# ------------------------------------------------------------------------
 def nix_store_del(path: str):
+    """
+    Remove given path from nix store (if it exists, no error if nonexistent)
+    path = nix store path to remove
+    """
+
     if os.path.exists(path):
-        result = subprocess.run([nixstore, "--delete", path], stdout=subprocess.PIPE)
+        result = subprocess.run(
+            [NIXSTORE, "--delete", path], stdout=subprocess.PIPE, check=False)
 
         if result.returncode != 0:
             perror(
-                f"{nixstore} --delete {path} failed ({result.returncode}):"
+                f"{NIXSTORE} --delete {path} failed ({result.returncode}):"
                 f"\n{result.stderr.decode('utf-8')}"
             )
 
 
 # ------------------------------------------------------------------------
-# Main program
-# ------------------------------------------------------------------------
-def main(argv: list[str]):
-    # Declare as globals just in case
-    global imagefn
-    global nixstore
-    global linksuffix
-    global infosuffix
-    global provenancesuffix
-
-    # HYDRA_JSON is set by Hydra to point to build information .json file
-    jsonfn = os.getenv("HYDRA_JSON")
-    if jsonfn is None:
-        perror("HYDRA_JSON not defined")
-
-    # POSTBUILD_SERVER needs to be set to the current server (e.g. hydra or awsarm)
-    hydra = os.getenv("POSTBUILD_SERVER")
-    if hydra is None:
-        perror("POSTBUILD_SERVER not defined")
-
-    # Allow override of the default nix-store command
-    nixstore = os.getenv("POSTBUILD_NIXSTORE", nixstore)
-
-    # Allow override of the default image file name
-    imagefn = os.getenv("POSTBUILD_IMAGE", imagefn)
-
-    # Allow override of the default image link suffix
-    linksuffix = os.getenv("POSTBUILD_LINKSUFFIX", linksuffix)
-
-    # Allow override of the default info file suffix
-    infosuffix = os.getenv("POSTBUILD_INFOSUFFIX", infosuffix)
-    
-    # Allow override of the provenance file suffix
-    provenancesuffix = os.getenv("POSTBUILD_PROVENANCE_SUFFIX", provenancesuffix)
+def main():
+    """Main program"""
 
     # Load build information
-    with open(jsonfn) as jsonf:
+    with open(JSONFN, encoding=ENCOD) as jsonf:
         binfo = json.load(jsonf)
 
     # Check status of the build, we are interested only in finished builds
@@ -150,18 +134,18 @@ def main(argv: list[str]):
     if outp is None:
         perror("Output not found")
 
-    imgf = outp + "/" + imagefn
+    outp += "/" + IMAGEFN
 
     # Check that output image file exists
-    if not os.path.isfile(imgf):
-        perror(f"{imgf} not found")
+    if not os.path.isfile(outp):
+        perror(f"{outp} is not an existing file")
 
     target = binfo["job"].split(".")[0]
     build = binfo["build"]
 
-    linkname = f"{target}{linksuffix}"
-    infoname = f"{hydra}-{build}{infosuffix}"
-    provenancename = f"{hydra}-{build}{provenancesuffix}"
+    linkname = f"{target}{LINKSUFFIX}"
+    infoname = f"{HYDRA}-{build}{INFOSUFFIX}"
+    provenancename = f"{HYDRA}-{build}{PROVENANCESUFFIX}"
 
     # Create link and info file in a temporary directory
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -169,7 +153,7 @@ def main(argv: list[str]):
         infofn = f"{tmpdir}/{infoname}"
 
         # Create symlink to image and add it to nix store
-        os.symlink(imgf, linkfn)
+        os.symlink(outp, linkfn)
         niximglink = nix_store_add(linkfn)
         print(f'POSTBUILD_LINK="{niximglink}"')
 
@@ -177,7 +161,7 @@ def main(argv: list[str]):
         binfo["imageLink"] = niximglink
 
         # Write build information to build info file and add to nix store
-        with open(infofn, "w") as infof:
+        with open(infofn, "w", encoding=ENCOD) as infof:
             json.dump(binfo, infof)
 
         nixbuildinfo = nix_store_add(infofn)
@@ -197,6 +181,7 @@ def main(argv: list[str]):
                 provenancename,  # file to save the provenance to
             ],
             stdout=subprocess.PIPE,
+            check=False
         )
         if result.returncode != 0:
             perror(
@@ -215,4 +200,33 @@ def main(argv: list[str]):
 # Run main when executed from command line
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv)
+    # HYDRA_JSON is set by Hydra to point to build information .json file
+    JSONFN = os.getenv("HYDRA_JSON")
+    if JSONFN is None:
+        perror("HYDRA_JSON not defined")
+
+    # POSTBUILD_SERVER needs to be set to the current server (e.g. hydra or awsarm)
+    HYDRA = os.getenv("POSTBUILD_SERVER")
+    if HYDRA is None:
+        perror("POSTBUILD_SERVER not defined")
+
+    # Get messagescript name if available
+    MESSAGESCRIPT = os.getenv("POSTBUILD_MSGSCRIPT")
+
+    # Allow override of the default nix-store command
+    NIXSTORE = os.getenv("POSTBUILD_NIXSTORE", NIXSTORE)
+
+    # Allow override of the default image file name
+    IMAGEFN = os.getenv("POSTBUILD_IMAGE", IMAGEFN)
+
+    # Allow override of the default image link suffix
+    LINKSUFFIX = os.getenv("POSTBUILD_LINKSUFFIX", LINKSUFFIX)
+
+    # Allow override of the default info file suffix
+    INFOSUFFIX = os.getenv("POSTBUILD_INFOSUFFIX", INFOSUFFIX)
+
+    # Allow override of the provenance file suffix
+    PROVENANCESUFFIX = os.getenv(
+        "POSTBUILD_PROVENANCE_SUFFIX", PROVENANCESUFFIX)
+
+    main()
