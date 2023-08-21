@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-COMMIT_HASH=3916a93e0bb694215a86b3b251bfa02344dc40d1
+COMMIT_HASH=055bf464f1a3344870a40f337caa492a69f69dbb
 
 git clone https://github.com/tiiuae/sbomnix
 cd sbomnix || exit
