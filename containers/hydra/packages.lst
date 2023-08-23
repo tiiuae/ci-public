@@ -13,7 +13,6 @@
 /nix/store/9vm1ihdg1ysmrjdbb80g834iizzxb4yk-bison-3.8.2.tar.gz
 /nix/store/0xiwj5b1vsxpzvqw2y16x86ya4k2f36p-ncurses-6.3-20220507.tgz
 
-
 # Other files failing to download on from-scratch build
 /nix/store/byib83r321c1fjgdk37kai1q1zxncra7-sys-cdefs.h
 /nix/store/06d2xkrl3h1pbyg3m1whz1mvhafqgsqq-source
@@ -21,12 +20,16 @@
 /nix/store/08cgqvix4am7rhgkp6j77mv9k9ia7p7q-CVE-2020-35492.patch
 /nix/store/ah9gyp7rxak9ig2q829myn6172jn302f-hack-font-3.003
 /nix/store/n47nsa09pban4cjhbcapm7a7lp7n1x5k-fira-code-6.2
-
 /nix/store/dqaik3rwbhrfjhmsrik1ja9g8dq5dy7y-fix-bug-80431.patch
-
 
 # nix-2023.05
 /nix/store/mdrv8znlgnysqzq1hnv46vi9jmnsc1bc-mpc-1.3.1.tar.gz
 /nix/store/v28dv6l0qk3j382kp40bksa1v6h7dx9p-bash-5.2.tar.gz
 /nix/store/zkas816mjrr8ijdj29qs4wqyn38l4j12-libunistring-1.1.tar.gz
 /nix/store/0avnvyc7pkcr4pjqws7hwpy87m6wlnjc-make-4.4.1.tar.gz
+
+# RISC-V
+/nix/store/xjc3kbwkz4w48p9jq81mkd3cxcq7pzxm-fakeroot_1.29.orig.tar.gz
+/nix/store/j6ij02s4aq6di55xgm22hdybhjb0fmgv-also-wrap-stat-library-call.patch
+/nix/store/rv4gqdkg4s0zq1csbjm1b253kcy1798j-dhcpcd-9.4.1.tar.xz
+/nix/store/89hvrm92nv63x565nc2nds0kz2b8mm7g-openresolv-3.12.0.tar.xz
