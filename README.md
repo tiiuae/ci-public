@@ -14,6 +14,7 @@ CI/CD related files
 | addtimestamp | Tool for adding timestamp to build report .json
 | containers | Everything related to dockerized server solution
 | csvdiff | Tool for comparing .csv files
+| docs | Documentation
 | githooks | Git hook scripts
 | hydractl | Tool for creating Hydra projects and jobsets
 | hydrascrape | Tool for scraping build info from Hydra web UI
@@ -37,6 +38,10 @@ If you have branches before the git hooks were committed to the repo, you'll hav
 Also note that any existing commit messages in any branch won't be checked, only new commit messages will be checked.
 
 If you encounter any issues with the git commit message hook, please report them. And while waiting for a fix, you may remove the hook by running ``rm -f .git/hooks/commit-msg`` in the main directory of the repository.
+
+## Guidelines for Bash scripts
+
+If you are writing bash scripts for this project, please follow these [guidelines](./docs/bash_script_style_guide.md).
 
 ## Licensing
 
