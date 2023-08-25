@@ -34,6 +34,7 @@ def hydra_api(server: str, path: str) -> dict | None:
     response = requests.get(
         server + path,
         headers={"Content-Type": "application/json"},
+        timeout=30,
     )
     if response.status_code == 200:
         return response.json()

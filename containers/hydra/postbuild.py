@@ -25,11 +25,11 @@ IMAGEFN = "nixos.img"
 NIXSTORE = "nix-store"
 LINKSUFFIX = "-nixos.img"
 INFOSUFFIX = "-build-info.json"
-PROVENANCESUFFIX = "-provenance.json"
 ENCOD = "UTF-8"
 JSONFN = None
 HYDRA = None
 MESSAGESCRIPT = None
+PROVENANCE_SCRIPT = None
 
 
 # ------------------------------------------------------------------------
@@ -99,8 +99,8 @@ def nix_store_del(path: str):
     """
 
     if os.path.exists(path):
-        result = subprocess.run(
-            [NIXSTORE, "--delete", path], stdout=subprocess.PIPE, check=False)
+        result = subprocess.run([NIXSTORE, "--delete", path],
+                                stdout=subprocess.PIPE, check=False)
 
         if result.returncode != 0:
             perror(
@@ -145,7 +145,6 @@ def main():
 
     linkname = f"{target}{LINKSUFFIX}"
     infoname = f"{HYDRA}-{build}{INFOSUFFIX}"
-    provenancename = f"{HYDRA}-{build}{PROVENANCESUFFIX}"
 
     # Create link and info file in a temporary directory
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -171,27 +170,11 @@ def main():
         print(f'POSTBUILD_INFO="{nixbuildinfo}"')
         print(f'POSTBUILD_INFO_SIGNATURE="{create_signature(nixbuildinfo)}"')
 
-        # generate provenance
-        result = subprocess.run(
-            [
-                "/setup/provenance.sh",
-                niximglink,  # image path
-                nixbuildinfo,  # buildinfo path
-                tmpdir,  # working dir for provenance and sbom
-                provenancename,  # file to save the provenance to
-            ],
-            stdout=subprocess.PIPE,
-            check=False
-        )
-        if result.returncode != 0:
-            perror(
-                f"provenance.sh failed ({result.returncode}):"
-                f"\n{result.stderr.decode('utf-8')}"
-            )
-
-        # print the output of provenance.sh
-        # PROVENANCE_LINK and PROVENANCE_SIGNATURE_LINK
-        print(result.stdout.decode("utf-8").strip())
+    # Run provenance generation if script is given
+    if PROVENANCE_SCRIPT is not None:
+        ret = os.system(PROVENANCE_SCRIPT)
+        if ret != 0:
+            print(f"{PROVENANCE_SCRIPT} failed ({ret})", file=sys.stderr)
 
     perror(None, 0)
 
@@ -213,6 +196,9 @@ if __name__ == "__main__":
     # Get messagescript name if available
     MESSAGESCRIPT = os.getenv("POSTBUILD_MSGSCRIPT")
 
+    # Get messagescript name if available
+    PROVENANCE_SCRIPT = os.getenv("POSTBUILD_PROVENANCE_SCRIPT")
+
     # Allow override of the default nix-store command
     NIXSTORE = os.getenv("POSTBUILD_NIXSTORE", NIXSTORE)
 
@@ -224,9 +210,5 @@ if __name__ == "__main__":
 
     # Allow override of the default info file suffix
     INFOSUFFIX = os.getenv("POSTBUILD_INFOSUFFIX", INFOSUFFIX)
-
-    # Allow override of the provenance file suffix
-    PROVENANCESUFFIX = os.getenv(
-        "POSTBUILD_PROVENANCE_SUFFIX", PROVENANCESUFFIX)
 
     main()

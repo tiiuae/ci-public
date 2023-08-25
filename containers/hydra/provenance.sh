@@ -3,40 +3,49 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-set -e
+# get the build id from buildinfo
+BUILD_ID="$(jq -r '.build' "$HYDRA_JSON")"
 
-# inputs
-IMAGE=$1
-BUILDINFO=$2
-OUTPUT_DIR=$3
-OUTPUT_FILENAME=$4
+# allow overriding suffix with env variable
+SUFFIX="${POSTBUILD_PROVENANCE_SUFFIX:--provenance.json}"
 
-BUILD_ID="$(jq -r '.build' "$BUILDINFO")"
-OUT="$OUTPUT_DIR/$OUTPUT_FILENAME"
+# provenance filename structure
+PROVENANCE_FILENAME="${POSTBUILD_SERVER}-${BUILD_ID}${SUFFIX}"
 
-cd "$OUTPUT_DIR" || exit
+# get path to the build output
+OUTPUT_PATH="$(jq -r '.outputs | .[0] | .path' "$HYDRA_JSON")"
+
+# location to save the provenance file and sboms in
+TMP_DIR="$(mktemp -d)"
+cd "$TMP_DIR" || exit 1
+SAVE_AS="${TMP_DIR}/${PROVENANCE_FILENAME}"
 
 # generate buildtime sbom (and suppress noisy stdout)
-sbomnix "$IMAGE" --type=buildtime --depth=1 > /dev/null 2>&1
+sbomnix "$OUTPUT_PATH" --type=buildtime --depth=1 > /dev/null 2>&1
 
-. $HOME/setup_config
+# tell shellcheck to ignore that this file doesn't exist
+# (file is generated in run_hydra.sh)
+# shellcheck source=/dev/null
+. "${HOME}/setup_config"
 
 # generate the provenance file
-/setup/provenance.py "$BUILDINFO" \
-    --out "$OUT" \
+/setup/provenance.py "$HYDRA_JSON" \
+    --out "$SAVE_AS" \
     --sbom sbom.cdx.json \
     --ci-version "$(cat /setup/ci-version)"
 
-# clean up sbom files
-# they are no longer needed
-rm sbom*
+if [ ! -f "$PROVENANCE_FILENAME" ]; then
+    echo "${PROVENANCE_FILENAME} was not generated" && exit 1
+fi
 
 # add provenance to nix store
-PROVENANCE="$(nix-store --add "$OUT")"
+PROVENANCE="$(nix-store --add "$SAVE_AS")"
 
 # sign the provenance file and upload both files to binary cache
 SIGNATURE="$(/setup/sign.sh "$PROVENANCE")"
+
+# this gets stuck without redirecting to /dev/null don't ask me why
 /setup/upload.sh "$PROVENANCE" "$SIGNATURE" > /dev/null 2>&1
 
-echo "PROVENANCE_LINK=\"$PROVENANCE\""
-echo "PROVENANCE_SIGNATURE=\"$SIGNATURE\""
+echo "PROVENANCE_FILE=\"${PROVENANCE}\""
+echo "PROVENANCE_SIGNATURE=\"${SIGNATURE}\""
