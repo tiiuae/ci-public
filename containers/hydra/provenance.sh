@@ -17,6 +17,7 @@ OUTPUT_PATH="$(jq -r '.outputs | .[0] | .path' "$HYDRA_JSON")"
 
 # location to save the provenance file and sboms in
 TMP_DIR="$(mktemp -d)"
+trap 'rm -rf -- "$TMP_DIR"' EXIT
 cd "$TMP_DIR" || exit 1
 SAVE_AS="${TMP_DIR}/${PROVENANCE_FILENAME}"
 
