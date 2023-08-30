@@ -72,6 +72,34 @@ persistent storage.
 
  ----
 
+For various ssh connections (e.g. signing, web upload) to work, the servers
+need to be in known_hosts inside the container.
+
+To enable known_hosts generation you need to need to set HC_KNOWN_HOSTS to
+a list of hosts ssh will connect with in your hydra.local configuration file.
+
+Entry format: "<server dns name or IP>:<server ssh port>"
+For example:
+HC_KNOWN_HOSTS=("serv1.dom:22" "172.0.0.1:4321")
+
+Note that even standard ssh port 22 needs to be indicated explicitly.
+
+Note that if server names are not available on DNS, you probably need to have
+also entries in HC_CUSTOM_HOSTS.
+
+Note that host keys are not added automatically for names and ip-addresses,
+so add entries exactly how you're configuring the server in other config.
+
+This will actually connect to the servers listed at the time of running
+run_hydra.sh. Make sure hostname lookups work on your host server. (e.g.
+/etc/hosts is up to date)
+
+This is only done when there is no known_hosts file present, to refresh
+the host keys, you need to delete "<store>/home/.ssh/known_hosts" -file
+before running run_hydra.sh
+
+ ----
+
 Hydra supports messaging to Slack channel. One needs first to create new Slack app
 with write rights (https://api.slack.com/apps) and storing given auth token to safe
 private place. Then Slack app must be installed to Slack workspace and to channel to

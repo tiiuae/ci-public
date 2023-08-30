@@ -44,6 +44,12 @@ HC_SRV_MOUNT=""
 # THIS CAN INCLUDE DESTRUCTIVE ACTIONS!
 HC_NONINTERACTIVE="off"
 
+# If this list is set and there's no existing "<store>/home/.ssh/known_hosts"
+# -file known_hosts will be generated with ssh-keyscan in run_hydra.sh
+# Entry format: "<server dns name or IP>:<server ssh port>"
+# (Both values are required, so port number 22 for standard ssh port)
+#HC_KNOWN_HOSTS=("server1.dom:22" "231.231.231.231:2222")
+
 if [ -f confs/hydra.local ] ; then
   # Possible overrides
   . confs/hydra.local
