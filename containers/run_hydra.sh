@@ -7,198 +7,227 @@
 
 # bash needed for '-s' and 'n' parameters for 'read'
 
-. confs/hydra.default
+# exit on error
+set -e
+
+# shellcheck disable=SC1091 # Don't complain about not following
+. "confs/hydra.default"
 
 # See README.hydra about the version
 HYDRA_STORE_VERSION="2"
 
-PRIVILEGED="--privileged"
+EXTRA_FLAGS="--privileged"
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
-  echo "Usage: $0 [store root=${HC_STORE_PATH} (from config)] [/srv mount=not in use] [debug mode=false]"
-  exit
-fi
-
-if ! [ -z "$1" ] ; then
-  STORE="$1"
-elif [ -z "${HC_STORE_PATH}" ] ; then
-  echo "No store path set!" >&2
-  exit 1
-else
-  STORE="${HC_STORE_PATH}"
-fi
-
-case "$2" in
-"")
-  SRV="${HC_SRV_MOUNT}"
+case "$1" in
+check-script)
+    # Just to check for errors on development environment that has shellcheck and bashate installed
+    if shellcheck --help > /dev/null 2>&1 && bashate --help > /dev/null 2>&1; then
+        if shellcheck "$0" && bashate -i E006 "$0"; then
+            echo "Nothing to complain"
+        fi
+    else
+        echo "Please install shellcheck and bashate to use check-script functionality"
+    fi
+    exit 0
 ;;
-"off")
-  SRV=""
+-h|--help)
+    echo "Usage: $0 [store root=${HC_STORE_PATH} (from config)] [/srv mount=not in use] [debug mode=false]"
+    exit
+;;
+"")
+    if [ -z "$HC_STORE_PATH" ]; then
+        echo "No store path set!" >&2
+        exit 1
+    fi
+    STORE="$HC_STORE_PATH"
 ;;
 *)
-  SRV="${2}"
+    STORE="$1"
 ;;
 esac
 
-if [ "$3" = "true" ] ; then
-  CONTAINER_DEBUG="true"
-elif [ "$3" = "" ] || [ "$3" = "false" ] ; then
-  CONTAINER_DEBUG="false"
-else
-  echo "Unknown debug value \"$3\"!" >&2
-  exit 1
+case "$2" in
+"")
+    SRV="${HC_SRV_MOUNT}"
+;;
+"off")
+    SRV=""
+;;
+*)
+    SRV="$2"
+;;
+esac
+
+case "${3,,}" in
+true)
+    CONTAINER_DEBUG="true"
+;;
+""|false)
+    CONTAINER_DEBUG="false"
+;;
+*)
+    echo "Unknown debug value \"$3\"!" >&2
+    exit 1
+;;
+esac
+
+if [ ! -d "$STORE" ] && [ "$HC_NONINTERACTIVE" != "on" ]; then
+    echo "\"$STORE\" does not exist. Do you want it created now? (y/n)"
+    echo -n "> "
+    read -r -n 1 ANSWER
+    echo
+    if [ "${ANSWER,,}" != "y" ]; then
+        echo "Aborted!" >&2
+        exit 1
+    fi
 fi
 
-if ! [ -d "$STORE" ] && [ "$HC_NONINTERACTIVE" != "on" ] ; then
-  echo "\"$STORE\" does not exist. Do you want it created now? (y/n)"
-  echo -n "> "
-  read -n 1 ANSWER
-  echo
-  if [ "$ANSWER" != "y" ] ; then
-    echo "Aborted!" >&2
-    exit 1
-  fi
-fi
-
-if ! [ -f "${STORE}/format" ] ; then
-  if [ -f "${STORE}/initializing" ] ; then
-    echo "\"${STORE}\" has been (only) partially populated by earlier run." >&2
-    echo "Don't know how to fix." >&2
-    exit 1
-  fi
-  # First run.
-  echo "First run - setting things up"
-  echo
-
-  if [ "$PW_ADMIN" = "" ] ; then
-    echo "Give hydra admin password"
-    echo -n "> "
-    read -s PW_ADMIN
-    echo
-    echo "Confirm hydra admin password"
-    echo -n "> "
-    read -s PW_CONFIRM
-    echo
-    if [ "$PW_ADMIN" != "$PW_CONFIRM" ] ; then
-      echo "Passwords do not match. Aborting!" >&2
-      exit 1
+if [ ! -f "${STORE}/format" ]; then
+    if [ -f "${STORE}/initializing" ]; then
+        echo "\"${STORE}\" has been (only) partially populated by earlier run." >&2
+        echo "Don't know how to fix." >&2
+        exit 1
     fi
-  fi
+    # First run.
+    echo "First run - setting things up"
+    echo
 
-  if [ "$PW_AUTO" = "" ] ; then
-    echo "Give hydra automation password"
-    echo -n "> "
-    read -s PW_AUTO
-    echo
-    echo "Confirm hydra automation password"
-    echo -n "> "
-    read -s PW_CONFIRM
-    echo
-    if [ "$PW_AUTO" != "$PW_CONFIRM" ] ; then
-      echo "Passwords do not match. Aborting!" >&2
-      exit 1
+    if [ -z "$PW_ADMIN" ]; then
+        while true; do
+            echo "Give hydra admin password"
+            echo -n "> "
+            read -r -s PW_ADMIN
+            echo ""
+            echo "Confirm hydra admin password"
+            echo -n "> "
+            read -r -s PW_CONFIRM
+            echo ""
+            if [ "$PW_ADMIN" = "$PW_CONFIRM" ]; then
+                break
+            else
+                echo "Passwords did not match." >&2
+            fi
+        done
     fi
-  fi
 
-  if ! mkdir -p "${STORE}/nix" ||
-     ! mkdir -p "${STORE}/home"
-  then
-    echo "Failed to create store directory \"${STORE}\"" >&2
-    exit 1
-  fi
-  touch "${STORE}/initializing"
-  # Make sure we have absolute path
-  STORE="$(cd "${STORE}" || exit 1 ; pwd)"
+    if [ -z "$PW_AUTO" ] ; then
+        while true; do
+            echo "Give hydra automation password"
+            echo -n "> "
+            read -r -s PW_AUTO
+            echo
+            echo "Confirm hydra automation password"
+            echo -n "> "
+            read -r -s PW_CONFIRM
+            echo
+            if [ "$PW_AUTO" = "$PW_CONFIRM" ] ; then
+                break
+            else
+                echo "Passwords did not match." >&2
+            fi
+        done
+    fi
 
-  echo "Copying store"
-  # Mount store as /nix/outside, so the container can copy files between internal store and outside store
-  docker run \
-       $PRIVILEGED \
-       --mount type=bind,source="${STORE}/nix",target=/nix/outside \
-       --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
-       -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "${HC_BASE_LABEL}"
+    # Extra error handling removed, exit on error flag will do nicely here
+    mkdir -p "${STORE}/nix" "${STORE}/home"
 
-  # Mount store over the nix store, run rest of the setup
-  mkdir -p "${STORE}/home"
-  echo "Restarting container, running setup"
-  docker run \
-       $PRIVILEGED \
-       --mount type=bind,source="${STORE}/nix",target=/nix \
-       --mount type=bind,source="${STORE}/home",target=/home/hydra \
-       -e SETUP_RUN=2 -e PW_ADMIN="$PW_ADMIN" -e PW_AUTO="$PW_AUTO" \
-       -t "${HC_BASE_LABEL}"
-  echo "Restarting container, configuring hydra projects and jobsets"
-  docker run --name "${HC_BASE_LABEL}-configure" -p "${HC_PORT}:3000" \
-       $PRIVILEGED \
-       --mount type=bind,source="${STORE}/nix",target=/nix \
-       --mount type=bind,source="${STORE}/home",target=/home/hydra \
-       -t "${HC_BASE_LABEL}" &
-  sleep 15
-  if ! HYDRACTL_PASSWORD="$PW_AUTO" ./hydra/hydra-configure.sh "${HC_PORT}" ; then
+    touch "${STORE}/initializing"
+    # Make sure we have absolute path
+    STORE="$(realpath "$STORE")"
+
+    echo "Copying store"
+    # Mount store as /nix/outside, so the container can copy files between internal store and outside store
+    # shellcheck disable=SC2086 # CONTAINER_DEBUG_ARG may contain space separated options for docker -> unquoted
+    docker run \
+        $EXTRA_FLAGS \
+        --mount type=bind,source="${STORE}/nix",target=/nix/outside \
+        --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
+        -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "${HC_BASE_LABEL}"
+
+    # Mount store over the nix store, run rest of the setup
+    mkdir -p "${STORE}/home"
+    echo "Restarting container, running setup"
+    # shellcheck disable=SC2086 # EXTRA_FLAGS purposefully unquoted
+    docker run \
+        $EXTRA_FLAGS \
+        --mount type=bind,source="${STORE}/nix",target=/nix \
+        --mount type=bind,source="${STORE}/home",target=/home/hydra \
+        -e SETUP_RUN=2 -e PW_ADMIN="$PW_ADMIN" -e PW_AUTO="$PW_AUTO" \
+        -t "${HC_BASE_LABEL}"
+    echo "Restarting container, configuring hydra projects and jobsets"
+    # shellcheck disable=SC2086 # EXTRA_FLAGS purposefully unquoted
+    docker run --name "${HC_BASE_LABEL}-configure" -p "${HC_PORT}:3000" \
+        $EXTRA_FLAGS \
+        --mount type=bind,source="${STORE}/nix",target=/nix \
+        --mount type=bind,source="${STORE}/home",target=/home/hydra \
+        -t "${HC_BASE_LABEL}" &
+    sleep 15
+    if ! HYDRACTL_PASSWORD="$PW_AUTO" ./hydra/hydra-configure.sh "${HC_PORT}" ; then
+        docker stop "${HC_BASE_LABEL}-configure"
+        docker container rm "${HC_BASE_LABEL}-configure"
+        echo "Hydra project setup failed" >&2
+        exit 1
+    fi
     docker stop "${HC_BASE_LABEL}-configure"
     docker container rm "${HC_BASE_LABEL}-configure"
-    echo "Hydra project setup failed" >&2
-    exit 1
-  fi
-  docker stop "${HC_BASE_LABEL}-configure"
-  docker container rm "${HC_BASE_LABEL}-configure"
 
-  # First line is the version, we could add more information to later lines
-  echo "${HYDRA_STORE_VERSION}" > "${STORE}/format"
-  rm "${STORE}/initializing"
-  echo
-  echo "Setup ready. Use ./run_hydra again for regular run."
-  exit
+    # First line is the version, we could add more information to later lines
+    echo "${HYDRA_STORE_VERSION}" > "${STORE}/format"
+    rm "${STORE}/initializing"
+    echo
+    echo "Setup ready. Use ./run_hydra again for regular run."
+    exit
 else
-  # Make sure we have absolute path
-  STORE="$(cd "${STORE}" || exit 1 ; pwd)"
+    # Make sure we have absolute path
+    STORE="$(realpath "$STORE")"
 
-  OLD_STORE_VERSION=$(cat "${STORE}/format" | head -n 1)
+    OLD_STORE_VERSION=$(head -n 1 "${STORE}/format")
 
-  # Add conversions from old versions to current one here, once there's a new version
-  if [ "${OLD_STORE_VERSION}" != "${HYDRA_STORE_VERSION}" ] ; then
-    echo "Format of the existing store (version: ${OLD_STORE_VERSION}) not supported." >&2
-    exit 1
-  fi
+    # Add conversions from old versions to current one here, once there's a new version
+    if [ "${OLD_STORE_VERSION}" != "${HYDRA_STORE_VERSION}" ] ; then
+        echo "Format of the existing store (version: ${OLD_STORE_VERSION}) not supported." >&2
+        exit 1
+    fi
 fi
 
-MOUNTS="\
- --mount type=bind,source=${STORE}/nix,target=/nix \
- --mount type=bind,source=${STORE}/home,target=/home/hydra \
-"
+MOUNTS=" \
+    --mount type=bind,source=${STORE}/nix,target=/nix \
+    --mount type=bind,source=${STORE}/home,target=/home/hydra \
+    "
 
 if [ "$SRV" != "" ] ; then
-  MOUNTS="$MOUNTS --mount type=bind,source=${SRV},target=/srv"
+    MOUNTS="$MOUNTS --mount type=bind,source=${SRV},target=/srv"
 fi
 
 HOSTS=""
-for host in ${HC_CUSTOM_HOSTS[@]}
-do
- HOSTS+="--add-host=$host "
+for host in "${HC_CUSTOM_HOSTS[@]}"; do
+    HOSTS+="--add-host=$host "
 done
 
-echo "# these are config values copied from setup
-export HYDRA_URL="$HYDRA_URL"
-export HYDRA_NAME="$HC_PB_SRV"
-" > "${STORE}/home/setup_config"
+SETUPCONFIG="${STORE}/home/setup_config"
+echo "# this is autogenerated from run_hydra.sh" > "$SETUPCONFIG"
+echo "export HYDRA_URL=\"$HYDRA_URL\"" >> "$SETUPCONFIG"
+echo "export HYDRA_NAME=\"$HC_PB_SRV\"" >> "$SETUPCONFIG"
 
-if [ "$CONTAINER_DEBUG" = "true" ] ; then
-  # Debug run
-  docker run \
-         --name "${HC_BASE_LABEL}-cnt" \
-         -p "${HC_PORT}:3000" \
-         $PRIVILEGED \
-         $MOUNTS \
-         $HOSTS \
-         -e SETUP_RUN="ext" \
-         -t "${HC_BASE_LABEL}"
+if [ "$CONTAINER_DEBUG" = "true" ]; then
+    # Debug run
+    # shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
+    docker run \
+        --name "${HC_BASE_LABEL}-cnt" \
+        -p "${HC_PORT}:3000" \
+        $EXTRA_FLAGS \
+        $MOUNTS \
+        $HOSTS \
+        -e SETUP_RUN="ext" \
+        -t "${HC_BASE_LABEL}"
 else
-  # Regular run
-  docker run \
-         --name "${HC_BASE_LABEL}-cnt" \
-         -p "${HC_PORT}:3000" \
-         $PRIVILEGED \
-         $MOUNTS \
-         $HOSTS \
-         -t "${HC_BASE_LABEL}"
+    # Regular run
+    # shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
+    docker run \
+        --name "${HC_BASE_LABEL}-cnt" \
+        -p "${HC_PORT}:3000" \
+        $EXTRA_FLAGS \
+        $MOUNTS \
+        $HOSTS \
+        -t "${HC_BASE_LABEL}"
 fi
