@@ -45,8 +45,7 @@ PROVENANCE="$(nix-store --add "$SAVE_AS")"
 # sign the provenance file and upload both files to binary cache
 SIGNATURE="$(/setup/sign.sh "$PROVENANCE")"
 
-# this gets stuck without redirecting to /dev/null don't ask me why
-/setup/upload.sh "$PROVENANCE" "$SIGNATURE" > /dev/null 2>&1
+/setup/upload.sh "$PROVENANCE" "$SIGNATURE"
 
 echo "PROVENANCE_FILE=\"${PROVENANCE}\""
 echo "PROVENANCE_SIGNATURE=\"${SIGNATURE}\""
