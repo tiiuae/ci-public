@@ -5,7 +5,11 @@
 
 # Keep this script simple. We don't want THIS to die,
 # as then it would remain dead.
-while true ; do
-  sleep 120
-  /setup/extracopy.sh
+sleep 10
+while true; do
+    # Starting in background is fine, the scripts have locks.
+    /setup/webupload.sh &
+    sleep 60
+    /setup/cachecopy.sh &
+    sleep 60
 done

@@ -14,8 +14,9 @@ pg_ctl start -D /home/hydra/db
 export LOGNAME="hydra"
 export HYDRA_DATA="/home/hydra/db"
 export HYDRA_CONFIG="/setup/hydra.conf"
-export POSTBUILD_MSGSCRIPT="/setup/messager.py -m nonews -f /home/hydra/confs/slack.conf"
+export POSTBUILD_MESSAGE_SCRIPT="/setup/messager.py -m nonews -f /home/hydra/confs/slack.conf"
 export POSTBUILD_PROVENANCE_SCRIPT="/setup/provenance.sh"
+export POSTBUILD_PACKAGE_SCRIPT="/setup/compress_outputs.sh"
 hydra-server &
 GC_DONT_GC="true" hydra-evaluator &
 hydra-notify &

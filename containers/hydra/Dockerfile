@@ -14,7 +14,7 @@ RUN chmod +x /setup/channel.sh
 RUN /setup/channel.sh "$CHANNEL"
 
 # install nix packages
-RUN nix-env -i hydra -i postgresql -i jq -i gnused -i python3
+RUN nix-env -i hydra -i postgresql -i jq -i gnused -i python3 -i xz
 
 # setup users and hydra
 ARG HYDRA_UID
@@ -41,8 +41,9 @@ RUN chmod +x /setup/install-sbomnix.sh
 RUN /setup/install-sbomnix.sh
 
 # copy all other setup scripts that will be used later
-COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py extracopy.sh \ 
+COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py cachecopy.sh \
     schedule.sh messager.py provenance.sh provenance.py sha256tree.py \
+    compress_outputs.sh webupload.sh \
     /setup/
 
 # make sure everything is executable

@@ -5,13 +5,14 @@
 
 # Sign a file or a directory
 
+# Exit on error
+set -e
 
 # Script setup parameters
 SIGN_CONF="/home/hydra/confs/signing.conf"
 SIGNTMPDIR="/home/hydra/signatures"
 INSTANCE_FILE="/setup/postbuildsrv.txt"
 PREREQUISITES=("cut --help" "python3 --version" "basename --help" "tail --help" "sort --help" "ssh -V" "nix-store --help")
-
 
 # Check given prerequisites (given commands can be executed)
 function Check_prerequisites {
@@ -84,28 +85,22 @@ case "$1" in
 ;;
 esac
 
-if [ -f "$SIGN_CONF" ]; then
+if [ -r "$SIGN_CONF" ]; then
     # shellcheck disable=SC1090 # Shut up about not being able to follow non-constant source
     . "$SIGN_CONF"
 
     if [ -n "$SIGNING_SRV" ] && [ -n "$SIGNING_SRV_KEY_FILE" ] && [ -n "$SIGNING_SRV_PATH" ] && [ -n "$SIGNING_SRV_USER" ]; then
-        SIGN_SSHOPTS="-i $SIGNING_SRV_KEY_FILE -l $SIGNING_SRV_USER"
-        if [ -n "$SIGNING_PORT" ]; then
-            SIGN_SSHOPTS+=" -p $SIGNING_PORT"
-        fi
-
-        # Check that commands are available
-        Check_prerequisites "${PREREQUISITES[@]}"
+        SIGNING_PORT="${SIGNING_PORT:-22}"
+        SIGN_SSHOPTS=("-n" "-oBatchMode=yes" "-i$SIGNING_SRV_KEY_FILE" "-l$SIGNING_SRV_USER" "-p$SIGNING_PORT")
 
         HYDRA_INSTANCE="$(< $INSTANCE_FILE)"
-        mkdir -p "$SIGNTMPDIR" || { echo "Could not create $SIGNTMPDIR" >&2; exit 1; }
+        mkdir -p "$SIGNTMPDIR"
 
         while [ -n "$1" ]; do
             SHA256SUM="$(Calc_sha256sum "$1")"
             SIGNATURE_FILE="${SIGNTMPDIR}/$(basename "$1")-${HYDRA_INSTANCE}.signature"
 
-            # shellcheck disable=SC2086 # $SIGN_SSHOPTS is purposefully unquoted here
-            if ssh -n -o BatchMode=yes $SIGN_SSHOPTS "$SIGNING_SRV" "${SIGNING_SRV_PATH}/start.sh" sign "-h=$SHA256SUM" > "$SIGNATURE_FILE"; then
+            if ssh "${SIGN_SSHOPTS[@]}" "$SIGNING_SRV" "${SIGNING_SRV_PATH}/start.sh" sign "-h=$SHA256SUM" > "$SIGNATURE_FILE"; then
                 # Remove carriage returns if any
                 if sed -i "s/\r//g" "$SIGNATURE_FILE"; then
                     if STORE_SIGN_FILE="$(nix-store --add "$SIGNATURE_FILE")"; then
