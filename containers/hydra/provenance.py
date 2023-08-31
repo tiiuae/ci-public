@@ -69,20 +69,22 @@ def nix_hash(image: str):
     return run_command(["nix-hash", "--base32", "--type", "sha256", image])
 
 
-def parse_subjects(image_paths: list[str | None]) -> list[dict]:
-    """return given images as ResourceDescriptors"""
+def parse_subjects(products: list[dict]) -> list[dict]:
+    """return given outputs as ResourceDescriptors"""
     subjects = []
-    for image in image_paths:
-        if image is not None:
-            subjects += [
-                {
-                    "name": image.rsplit("/", 1)[-1],
-                    "uri": image,
-                    "digest": {
-                        "sha256": nix_hash(image),
-                    },
-                }
-            ]
+    for product in products:
+        subjects += [
+            {
+                "name": product["name"],
+                "uri": product["path"],
+                "digest": {
+                    "sha256": nix_hash(product["path"]),
+                },
+            }
+        ]
+
+    if not subjects:
+        print("Warning: no subjects in provenance")
 
     return subjects
 
@@ -127,7 +129,7 @@ def generate_provenance(
     """Generate the provenance file from given inputs"""
     return {
         "_type": "https://in-toto.io/Statement/v1",
-        "subject": parse_subjects([build_info.get("imageLink")]),
+        "subject": parse_subjects(build_info["products"]),
         "predicateType": "https://slsa.dev/provenance/v1",
         "predicate": {
             "buildDefinition": {
@@ -143,6 +145,7 @@ def generate_provenance(
                     "jobset": build_info["jobset"],
                     "drvPath": build_info["drvPath"],
                     "release": build_info["nixName"],
+                    "description": build_info["description"],
                 },
                 "resolvedDependencies": resolve_build_dependencies(sbom_path),
             },
