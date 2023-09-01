@@ -75,7 +75,24 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "Orin"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "orin-agx"]
+                                ]
+                            }catch (err) {
+                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            }
+                        } else if ("${buildData['Job']}".contains("orin-nx")) {
+                            //Trigger Orin post processing pipeline
+                            try {
+                                build job: "${processingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                    [$class: 'StringParameterValue', name: 'device', value: "orin-nx"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
@@ -92,7 +109,7 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "NUC"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "nuc"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
@@ -108,7 +125,8 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
-                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"]
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                    [$class: 'StringParameterValue', name: 'device', value: "risc-v"]
                                 ]
                             }catch (err) {
                                 println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
