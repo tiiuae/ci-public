@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # pylint: disable=invalid-name, protected-access, too-many-locals
+# pylint: disable=too-many-branches, too-many-statements
 
 """ Python script for comparing two csv files """
 
@@ -22,9 +23,16 @@ import pandas as pd
 def _getargs():
     """Parse command line arguments"""
     desc = (
-        "This tool compares two csv files. Exit status is 0 if the csv files "
-        "LEFT_CSV and RIGHT_CSV include the same rows (in any order). In all "
-        "other cases, the exit status is 1."
+        "This tool compares two csv files writing the comparison result "
+        "to a csv file '[OUT]', by default, 'csvdiff.csv'. The output file "
+        "details the result of comparing the rows between LEFT_CSV "
+        "and RIGHT_CSV, adding column 'diff' to the "
+        "output file to report the comparison result for each row. "
+        "Possible values for 'diff' column are: 'both', 'left_only', or "
+        "'right_only' indicating whether the specific row was found from "
+        "both files, only in the LEFT_CSV, or only in the RIGHT_CSV. "
+        "Exit status is 1 if error occurred. In all other cases, the exit "
+        "status is 0."
     )
     epil = "Example: csvdiff /path/to/left.csv /path/to/right.csv"
     parser = argparse.ArgumentParser(description=desc, epilog=epil)
@@ -114,7 +122,10 @@ def df_from_csv_file(name):
         df.reset_index(drop=True, inplace=True)
         return df
     except pd.errors.ParserError:
-        LOG.fatal("Not a csv file: '%s'", name)
+        LOG.fatal("Not a csv file '%s'", name)
+        sys.exit(1)
+    except pd.errors.EmptyDataError:
+        LOG.fatal("No columns to parse from '%s'", name)
         sys.exit(1)
 
 
@@ -128,18 +139,21 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
     df_right = df_from_csv_file(path_right)
     if cols is not None:
         # Diff based on the given column names
-        uids = list(cols)
+        uids = list(set(cols))
         if not set(cols).issubset(df_left.columns):
             LOG.fatal("Not all column names %s in LEFT_CSV", cols)
             sys.exit(1)
         if not set(cols).issubset(df_right.columns):
             LOG.fatal("Not all column names %s in RIGHT_CSV", cols)
             sys.exit(1)
+        if "diff" in uids:
+            LOG.fatal("Reserved column name 'diff' can not be used as uid")
+            sys.exit(1)
         LOG.info("Using column names %s as uid", uids)
     else:
         # Otherwise, diff based on all column names
         uids = list(df_left.columns)
-        # Error out if colum names between the two files don't match
+        # Error out if column names between the two files don't match
         cols_diff = set(df_left.columns) ^ set(df_right.columns)
         if cols_diff:
             LOG.fatal(
@@ -159,6 +173,12 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
         sys.exit(1)
     if df_right.empty:
         LOG.fatal("No rows in RIGHT_CSV")
+        sys.exit(1)
+    if "diff" in df_left.columns:
+        LOG.fatal("LEFT_CSV includes reserved column name 'diff'")
+        sys.exit(1)
+    if "diff" in df_right.columns:
+        LOG.fatal("RIGHT_CSV includes reserved column name 'diff'")
         sys.exit(1)
     # Add 'count' column that indicates the count of duplicates by 'uids'
     df_left_uidg = df_left.groupby(by=uids).size().reset_index(name="count")
@@ -188,8 +208,9 @@ def _csv_diff(path_left, path_right, ignoredups=False, cols=None):
         dfs.append(df_right_only.merge(df_right, how="left", on=uids))
         df_both_left = df_both.merge(df_left, how="left", on=uids)
         common_cols = list(df_both_left.columns.intersection(df_right.columns))
-        # For non-uid common columns, where the values don't match use the value
-        # from 'left'
+        LOG.debug("common_cols: %s", common_cols)
+        # For non-uid common columns where the values don't match, use the
+        # value from 'left'
         dfs.append(df_both_left.merge(df_right, how="left", on=common_cols))
         df_diff = pd.concat(dfs).reset_index(drop=True)
 
@@ -231,10 +252,10 @@ def _report_diff(df_diff):
         LOG.info("Number of common rows: %s", df_common.shape[0])
     df_left_only = df_diff[df_diff["diff"] == "left_only"]
     if not df_left_only.empty:
-        LOG.warning("Number of LEFT_ONLY rows: %s", df_left_only.shape[0])
+        LOG.info("Number of LEFT_ONLY rows: %s", df_left_only.shape[0])
     df_right_only = df_diff[df_diff["diff"] == "right_only"]
     if not df_right_only.empty:
-        LOG.warning("Number of RIGHT_ONLY rows: %s", df_right_only.shape[0])
+        LOG.info("Number of RIGHT_ONLY rows: %s", df_right_only.shape[0])
     return df_left_only.empty and df_right_only.empty
 
 
@@ -255,9 +276,8 @@ def main():
     right_csv = args.RIGHT_CSV.as_posix()
     LOG.info("Comparing 'LEFT_CSV=%s' 'RIGHT_CSV=%s'", left_csv, right_csv)
     df_diff = _csv_diff(left_csv, right_csv, args.ignoredups, args.cols)
-    diff = not bool(_report_diff(df_diff))
+    _report_diff(df_diff)
     df_to_csv_file(df_diff, args.out)
-    sys.exit(int(diff))
 
 
 ################################################################################
