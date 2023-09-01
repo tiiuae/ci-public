@@ -1,0 +1,7 @@
+"vuln_id","package","version","diff","diff_"
+"CVE-2023-28531","openssh","9.1p1","diff.val1","diff_.val1"
+"CVE-2023-27371","libmicrohttpd","0.9.71","diff.val2","diff_.val2"
+"CVE-2023-27320","sudo","1.9.13","diff.val3","diff_.val3"
+"CVE-2023-25193","harfbuzz","5.2.0","diff.val4","diff_.val4"
+"CVE-2023-23914","curl","7.86.0","diff.val5","diff_.val5"
+"CVE-2023-22743","git","2.38.4","diff.val6","diff_.val6"

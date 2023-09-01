@@ -69,8 +69,12 @@ def test_csvdiff_match():
     """Test csvdiff with matching files"""
     left_path = MYDIR / "resources" / "left.csv"
     assert left_path.exists()
-    cmd = [CSVDIFF, left_path, left_path]
-    assert subprocess.run(cmd, check=True).returncode == 0
+    out_path = TEST_WORK_DIR / "diff.csv"
+    cmd = [CSVDIFF, "--out", out_path, left_path, left_path]
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    assert out_path.exists()
+    assert "LEFT_ONLY rows" not in ret.stderr
+    assert "RIGHT_ONLY rows" not in ret.stderr
 
 
 def test_csvdiff_nomatch():
@@ -81,8 +85,7 @@ def test_csvdiff_nomatch():
     assert right_path.exists()
     out_path = TEST_WORK_DIR / "diff.csv"
     cmd = [CSVDIFF, "--out", out_path, left_path, right_path]
-    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    assert ret.returncode == 1
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert out_path.exists()
     assert "LEFT_ONLY rows: 1" in ret.stderr
     assert "RIGHT_ONLY rows: 1" in ret.stderr
@@ -98,21 +101,22 @@ def test_csvdiff_ignoredups():
     cmd = [CSVDIFF, left_path, left_dups_path]
     ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
     print(ret)
-    assert ret.returncode == 1
     assert "RIGHT_ONLY rows: 1" in ret.stderr
     # With --ignoredups, the following reports a no diffs:
     cmd = [CSVDIFF, "--ignoredups", left_path, left_dups_path]
-    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    assert ret.returncode == 0
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
 
 def test_csvdiff_cols_valid():
     """Test csvdiff with --cols with valid column names"""
     left_path = MYDIR / "resources" / "left.csv"
     assert left_path.exists()
-    cmd = [CSVDIFF, left_path, left_path, "--cols=vuln_id,package"]
-    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    assert ret.returncode == 0
+    out_path = TEST_WORK_DIR / "diff.csv"
+    cmd = [CSVDIFF, left_path, left_path, "--cols=vuln_id,package", "--out", out_path]
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    assert out_path.exists()
+    assert "LEFT_ONLY rows" not in ret.stderr
+    assert "RIGHT_ONLY rows" not in ret.stderr
 
 
 def test_csvdiff_cols_invalid():
@@ -142,15 +146,14 @@ def test_csvdiff_cols_dups():
     assert right_path.exists()
     # Without --cols and --ignoredups
     cmd = [CSVDIFF, left_path, right_path]
-    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    assert ret.returncode == 1
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert "LEFT_ONLY rows: 3" in ret.stderr
     assert "RIGHT_ONLY rows: 1" in ret.stderr
     # With --cols and without --ignoredups
     cmd = [CSVDIFF, left_path, right_path, "--cols=vuln_id,package"]
-    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
-    assert ret.returncode == 1
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert "LEFT_ONLY rows: 3" in ret.stderr
+    assert "RIGHT_ONLY rows" not in ret.stderr
     # With --cols and --ignoredups
     cmd = [
         CSVDIFF,
@@ -159,7 +162,9 @@ def test_csvdiff_cols_dups():
         "--ignoredups",
         "--cols=vuln_id,package",
     ]
-    assert subprocess.run(cmd, check=False).returncode == 0
+    ret = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    assert "LEFT_ONLY rows" not in ret.stderr
+    assert "RIGHT_ONLY rows" not in ret.stderr
 
 
 def test_csvdiff_noentries():
@@ -169,7 +174,9 @@ def test_csvdiff_noentries():
     right_path = MYDIR / "resources" / "noentries.csv"
     assert right_path.exists()
     cmd = [CSVDIFF, left_path, right_path]
-    assert subprocess.run(cmd, check=False).returncode == 1
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
+    assert "CRITICAL" in ret.stderr
 
 
 def test_csvdiff_empty():
@@ -179,7 +186,21 @@ def test_csvdiff_empty():
     right_path = MYDIR / "resources" / "empty.csv"
     assert right_path.exists()
     cmd = [CSVDIFF, left_path, right_path]
-    assert subprocess.run(cmd, check=False).returncode == 1
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
+    assert "CRITICAL" in ret.stderr
+
+
+def test_csvdiff_reserved_col():
+    """Test csvdiff with a csv file that contain column 'diff'"""
+    left_path = MYDIR / "resources" / "left.csv"
+    assert left_path.exists()
+    right_path = MYDIR / "resources" / "diff_col.csv"
+    assert right_path.exists()
+    cmd = [CSVDIFF, left_path, right_path]
+    ret = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    assert ret.returncode == 1
+    assert "CRITICAL" in ret.stderr
 
 
 ################################################################################
