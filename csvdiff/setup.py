@@ -43,10 +43,11 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3 :: Only",
     ],
-    packages=["src"],
+    packages=["csvdiff"],
+    package_dir={"": "src"},
     entry_points={
         "console_scripts": [
-            "csvdiff = src.csvdiff:main",
+            "csvdiff = csvdiff.main:main",
         ]
     },
 )

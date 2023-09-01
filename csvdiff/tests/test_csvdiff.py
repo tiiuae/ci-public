@@ -16,7 +16,7 @@ import pytest
 MYDIR = Path(os.path.dirname(os.path.realpath(__file__)))
 TEST_WORK_DIR = None
 REPOROOT = MYDIR / ".."
-CSVDIFF = MYDIR / ".." / "src" / "csvdiff.py"
+CSVDIFF = REPOROOT / "src" / "csvdiff" / "main.py"
 
 ################################################################################
 
