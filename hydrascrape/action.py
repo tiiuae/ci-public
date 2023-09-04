@@ -4,10 +4,10 @@
 # ------------------------------------------------------------------------
 # Action script for hydra scraper
 # ------------------------------------------------------------------------
-import sys
-import os
 import json
+import os
 import subprocess
+import sys
 
 
 # ------------------------------------------------------------------------
@@ -79,6 +79,8 @@ transtable = {
 # obinfo: dictionary containing scraped values
 #   values overwritten or appended, may be empty
 # ------------------------------------------------------------------------
+
+
 def translate(ibinfo: dict, obinfo: dict):
     for k in transtable:
         nk = transtable[k]
@@ -89,7 +91,7 @@ def translate(ibinfo: dict, obinfo: dict):
             oval = obinfo.get(nk)
             # Check and warn if there's contradicting info
             if oval != None and oval != val:
-                print( "Warning! differing build information:", file=sys.stderr)
+                print("Warning! differing build information:", file=sys.stderr)
                 print(f"  {k} = {val}", file=sys.stderr)
                 print(f"  {nk} = {oval}", file=sys.stderr)
             # Trust the nix-store json file rather than scraped stuff
@@ -101,7 +103,7 @@ def translate(ibinfo: dict, obinfo: dict):
     # Check outputs also
     obio = obinfo.get('Output store paths')
     if obio != None and obio != ooutputs:
-        print( "Warning! differing build information:", file=sys.stderr)
+        print("Warning! differing build information:", file=sys.stderr)
         print(f"  outputs = {ooutputs}", file=sys.stderr)
         print(f"  Output store paths = {obio}", file=sys.stderr)
 
@@ -114,7 +116,8 @@ def translate(ibinfo: dict, obinfo: dict):
 # return = dictionary of build info
 # ------------------------------------------------------------------------
 def min_info_from_env() -> dict:
-    envl = ["Server", "Postbuild info", "Maintainers", "Closure size", "Output size" ]
+    envl = ["Server", "Postbuild info",
+            "Maintainers", "Closure size", "Output size"]
     res = {}
 
     for k in envl:
@@ -152,12 +155,13 @@ def main(argv: list[str]):
     # Copy build info json file
     nix_copy(cacheurl, [jsonf])
 
-    with open(jsonf,"r") as fh:
+    with open(jsonf, "r") as fh:
         binfo = json.load(fh)
 
     # Check status of the build, we are interested only in finished builds
     if binfo.get('buildStatus') != 0 or binfo.get('finished') != True or binfo.get('event') != "buildFinished":
-        perror(f"Unexpected build status: {binfo.get('buildStatus')}, ignoring", 0)
+        perror(
+            f"Unexpected build status: {binfo.get('buildStatus')}, ignoring", 0)
 
     # Find output paths
     outps = get_outputs(binfo.get('outputs'))
@@ -194,6 +198,7 @@ def main(argv: list[str]):
     # Add build to post processing list
     with open(wlist, "a") as wf:
         print(f"{bnum}:{' '.join(outps)}", file=wf)
+
 
 # ------------------------------------------------------------------------
 # Run main when executed from command line
