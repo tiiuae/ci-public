@@ -7,16 +7,17 @@
 # facilitate further processing in e.g. Jenkins environment.
 # ------------------------------------------------------------------------
 
-import bs4
-import sys
-import urllib.request
 import gzip
-import subprocess
+import json
 import os
 import re
-import filelock
-import json
+import subprocess
+import sys
+import urllib.request
 from urllib.error import HTTPError
+
+import bs4
+import filelock
 
 # ------------------------------------------------------------------------
 # Global debug flag
@@ -30,7 +31,7 @@ debug = 0
 # default = Default value which is zero by default
 # Returns an integer, always
 # ------------------------------------------------------------------------
-def convert_int(str, default = 0):
+def convert_int(str, default=0):
     # Try converting to integer
     try:
         i = int(str)
@@ -45,7 +46,8 @@ def convert_int(str, default = 0):
 # ------------------------------------------------------------------------
 def help():
     print("")
-    print("Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]")
+    print(
+        "Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]")
     print("")
     print("Tries to find builds to handle for specific projects and jobsets from a hydra server")
     print("Already handled builds will be read from handled builds file if it exists")
@@ -76,11 +78,11 @@ def get_page(context, url):
     if debug:
         print(f"Fetching: {url}")
 
-    req = urllib.request.Request(url, headers = context['headers'])
+    req = urllib.request.Request(url, headers=context['headers'])
     try:
         response = urllib.request.urlopen(req)
     except HTTPError as error:
-        print(f"HTTP error: {error}", file = sys.stderr)
+        print(f"HTTP error: {error}", file=sys.stderr)
         return ""
 
     # Decompress if gzipped content
@@ -89,7 +91,7 @@ def get_page(context, url):
     elif response.info().get('Content-Encoding') == 'deflate':
         text = response.read()
     elif response.info().get('Content-Encoding'):
-        print('Encoding type unknown', file = sys.stderr)
+        print('Encoding type unknown', file=sys.stderr)
         return ""
     else:
         text = response.read()
@@ -107,8 +109,8 @@ def get_builds(context, eval):
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     builds = []
-    for link in reversed(soup.find_all("a",{"class": "row-link"})):
-        build = convert_int(link.text.strip(),-1)
+    for link in reversed(soup.find_all("a", {"class": "row-link"})):
+        build = convert_int(link.text.strip(), -1)
         if build != -1:
             if debug:
                 print(f"Found build {build}")
@@ -140,7 +142,8 @@ def get_handled(filename):
                 if ci != -1:
                     handled.append(ci)
                 else:
-                    print(f"Weird build number in handled builds file: {bs}", file=sys.stderr)
+                    print(
+                        f"Weird build number in handled builds file: {bs}", file=sys.stderr)
 
         if debug:
             print(f"handled = {handled}")
@@ -150,7 +153,7 @@ def get_handled(filename):
             print(f"{filename} not found")
 
     except PermissionError as pe:
-        print(f"Cannot read {filename}: {pe.strerror}", file = sys.stderr)
+        print(f"Cannot read {filename}: {pe.strerror}", file=sys.stderr)
         sys.exit(1)
 
     return handled
@@ -170,7 +173,7 @@ def update_handled(filename, handled):
         file.close()
 
     except PermissionError as pe:
-        print(f"Cannot update {filename}: {pe.strerror}", file = sys.stderr)
+        print(f"Cannot update {filename}: {pe.strerror}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -191,7 +194,7 @@ def get_postbuild_info(context: dict, hash: str, binfo: dict):
         line = line.strip()
         # If pattern matches store the value in binfo
         if pat.match(line):
-            varname = line.split("=")[0].lower().capitalize().replace('_',' ')
+            varname = line.split("=")[0].lower().capitalize().replace('_', ' ')
             value = line.split('"')[1]
             binfo[varname] = value
 
@@ -225,17 +228,19 @@ detailkeys = [
 # context = Connection context
 # bnum = Build ID
 # ------------------------------------------------------------------------
+
+
 def get_build_info(context, bnum):
     text = get_page(context, f"{context['hydra_url']}build/{bnum}")
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     binfo = {}
 
-    for div in soup.find_all("div",{"id": "tabs-summary"}):
+    for div in soup.find_all("div", {"id": "tabs-summary"}):
         for th in div.find_all("th"):
             hdr = th.text.strip().rstrip(':')
             val = summarykeys.get(hdr)
-            if  val != None:
+            if val != None:
                 if val == -1:
                     break
 
@@ -250,9 +255,9 @@ def get_build_info(context, bnum):
                         print(f"Trouble getting {hdr}")
                     pass
 
-    for div in soup.find_all("div",{"id": "tabs-details"}):
+    for div in soup.find_all("div", {"id": "tabs-details"}):
         for th in div.find_all("th"):
-            hdr = th.text.strip().rstrip(':').replace('(','').replace(')','')
+            hdr = th.text.strip().rstrip(':').replace('(', '').replace(')', '')
             if hdr in detailkeys:
                 try:
                     data = th.find_next_sibling().contents[0]
@@ -269,7 +274,7 @@ def get_build_info(context, bnum):
                     pass
 
     inputs = []
-    for div in soup.find_all("div",{"id": "tabs-buildinputs"}):
+    for div in soup.find_all("div", {"id": "tabs-buildinputs"}):
         for tbody in div.find_all("tbody"):
             for tr in tbody.find_all("tr"):
                 tds = tr.find_all("td")
@@ -278,8 +283,8 @@ def get_build_info(context, bnum):
                     source = tds[2].text.strip()
                     hash = tds[3].text.strip()
                     inputs.append({"Name": input,
-                               "Hash": hash,
-                               "Source": source})
+                                   "Hash": hash,
+                                   "Source": source})
                 except IndexError:
                     if debug:
                         print("Trouble getting build inputs")
@@ -287,7 +292,8 @@ def get_build_info(context, bnum):
     if len(inputs) > 0:
         binfo['Inputs'] = inputs
     binfo['Output store paths'] = binfo['Output store paths'].split(' ')
-    binfo['Job'] = soup.find("div", {"class": "page-header"}).text.split(':')[-1].strip()
+    binfo['Job'] = soup.find(
+        "div", {"class": "page-header"}).text.split(':')[-1].strip()
 
     # Find run command log hash entries for build
     loghash = None
@@ -316,12 +322,14 @@ def set_env(binfo):
     for key in binfo:
         if key == "Output store paths":
             # Set the plain hash of the first output separately
-            env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key][0].removeprefix("/nix/store/").split('-', 1)[0]
+            env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key][0].removeprefix(
+                "/nix/store/").split('-', 1)[0]
             env["HYDRA_OUTPUT_STORE_PATHS"] = ' '.join(binfo[key])
             continue
         if key == "Derivation store path":
             # Set the plain hash of the derivation separately
-            env["HYDRA_DERIVATION_STORE_HASH"] = binfo[key].removeprefix("/nix/store/").split('-', 1)[0]
+            env["HYDRA_DERIVATION_STORE_HASH"] = binfo[key].removeprefix(
+                "/nix/store/").split('-', 1)[0]
         if key == "Inputs":
             env["HYDRA_INPUTS"] = ""
             for i in binfo[key]:
@@ -351,7 +359,7 @@ def save_json(binfo):
             outf.write(json_obj)
 
     except PermissionError as pe:
-        print(f"Could not write {pe.filename}: {pe.strerror}", file = sys.stderr)
+        print(f"Could not write {pe.filename}: {pe.strerror}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -441,15 +449,18 @@ def get_jobsets(context, project):
 # jobset = Jobset name
 # handled = list of handled builds
 # ------------------------------------------------------------------------
+
+
 def handle_jobset(context, project, jobset, handled):
     # It is assumed here that all evaluations containing builds that need processing
     # are found on the first page of evaluations listing
-    text = get_page(context, f"{context['hydra_url']}jobset/{project}/{jobset}")
+    text = get_page(
+        context, f"{context['hydra_url']}jobset/{project}/{jobset}")
 
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     builds = []
-    for link in reversed(soup.find_all("a",{"class": "row-link"})):
+    for link in reversed(soup.find_all("a", {"class": "row-link"})):
         # Could also use the link as-is, but just to be safe side we create new link
         builds += get_builds(context, link.text)
 
@@ -465,10 +476,11 @@ def handle_jobset(context, project, jobset, handled):
 
             if buildid != i:
                 if debug:
-                    print(f"Build ID mismatch: build id on page = {buildid}, build id requested = {i}, skipping")
+                    print(
+                        f"Build ID mismatch: build id on page = {buildid}, build id requested = {i}, skipping")
                 continue
 
-            status = binfo.get('Status','Unknown')
+            status = binfo.get('Status', 'Unknown')
 
             if status == "Scheduled to be built" or status == "Build in progress":
                 if debug:
@@ -604,6 +616,8 @@ def dj_e(context):
 # Main function
 # argv = Command line parameters
 # ------------------------------------------------------------------------
+
+
 def main(argv):
     global debug
     # Set debug if set in environment
@@ -616,7 +630,7 @@ def main(argv):
              "-dp": dp_e,
              "-hj": hj_e,
              "-dj": dj_e,
-    }
+             }
 
     # Default settings in context
     context = {'json_en': False,
@@ -632,15 +646,15 @@ def main(argv):
     context['server'] = argv[0]
 
     r = []
-    for i in [0,1]:
+    for i in [0, 1]:
         try:
             # Create regular expression objects of project and jobset strings
             r.append(re.compile(argv[i + 1]))
         except re.error as e:
             if e.pos != None:
-                print(argv[i + 1], file = sys.stderr)
-                print(" " * e.pos + "^", file = sys.stderr)
-            print(f"Regular expression error: {e.msg}", file = sys.stderr)
+                print(argv[i + 1], file=sys.stderr)
+                print(" " * e.pos + "^", file=sys.stderr)
+            print(f"Regular expression error: {e.msg}", file=sys.stderr)
             sys.exit(1)
 
     context['re_p'] = r[0]
@@ -666,10 +680,12 @@ def main(argv):
     except filelock.Timeout as to:
         if debug:
             print(f"Unable to get lock {to.lock_file}")
-            print("If no other hydrascrapers are running, check permissions and/or delete the lock file")
+            print(
+                "If no other hydrascrapers are running, check permissions and/or delete the lock file")
 
     except PermissionError as pe:
-        print(f"Could not aquire {argv[3]}.lock: {pe.strerror}", file = sys.stderr)
+        print(
+            f"Could not aquire {argv[3]}.lock: {pe.strerror}", file=sys.stderr)
 
     finally:
         lock.release()
