@@ -3,9 +3,10 @@
 # SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
-# Script for extracting build information from a hydra server to
-# facilitate further processing in e.g. Jenkins environment.
-# ------------------------------------------------------------------------
+"""
+Script for extracting build information from a hydra server to
+facilitate further processing in e.g. Jenkins environment.
+"""
 
 import gzip
 import json
@@ -19,63 +20,62 @@ from urllib.error import HTTPError
 import bs4
 import filelock
 
-# ------------------------------------------------------------------------
 # Global debug flag
-# ------------------------------------------------------------------------
-debug = 0
+DEBUG = 0
 
 
-# ------------------------------------------------------------------------
-# Convert string to an int with default value if invalid string given
-# str = String to convert
-# default = Default value which is zero by default
-# Returns an integer, always
-# ------------------------------------------------------------------------
-def convert_int(str, default=0):
+def convert_int(input_str, default=0):
+    """Convert string to an int with default value if invalid string given
+
+    @param str: String to convert
+    @param default: Default value which is zero by default
+
+    @return: an integer, always
+    """
     # Try converting to integer
     try:
-        i = int(str)
+        i = int(input_str)
     # If it fails, use the default value
     except (ValueError, TypeError):
         i = default
     return i
 
 
-# ------------------------------------------------------------------------
-# Print help and exit
-# ------------------------------------------------------------------------
-def help():
-    print("")
-    print(
-        "Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]")
-    print("")
-    print("Tries to find builds to handle for specific projects and jobsets from a hydra server")
-    print("Already handled builds will be read from handled builds file if it exists")
-    print("Successfully handled builds (action returned 0) will be added to the handled builds file")
-    print("action will be run with all the build information in the environment")
-    print("")
-    print("For example, check environment variables starting with \"HYDRA_\":")
-    print("python3 hydrascrape.py my.hydra.server myproject \"job.*\" myhydra_handled_builds.txt \"env | egrep ^HYDRA_\" -debug")
-    print("")
-    print("Available options:")
-    print("  -debug  Enable debugging (You can also set DEBUG environment variable to 1)")
-    print("  -json   Enable JSON output, build info will be written in JSON format to <build ID>.json before running action")
-    print("  -dp     Include disabled projects in search")
-    print("  -hp     Include hidden projects in search")
-    print("  -dj     Include disabled jobsets in search")
-    print("  -hj     Include hidden jobsets in search")
+def send_help():
+    """Print help and exit"""
+    # pylint: disable=line-too-long
+
+    print("""
+Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]
+
+Tries to find builds to handle for specific projects and jobsets from a hydra server
+Already handled builds will be read from handled builds file if it exists
+Successfully handled builds (action returned 0) will be added to the handled builds file
+action will be run with all the build information in the environment
+
+For example, check environment variables starting with \"HYDRA_\":
+python3 hydrascrape.py my.hydra.server myproject 'job.*' '.*' myhydra_handled_builds.txt 'env | egrep ^HYDRA_' -debug
+
+Available options:
+  -debug  Enable debugging (You can also set DEBUG environment variable to 1)
+  -json   Enable JSON output, build info will be written in JSON format to <build ID>.json before running action
+  -dp     Include disabled projects in search
+  -hp     Include hidden projects in search
+  -dj     Include disabled jobsets in search
+  -hj     Include hidden jobsets in search
+    """)
     sys.exit(0)
 
 
-# ------------------------------------------------------------------------
-# Fetches a page from given web site
-# context = Connection context
-# url = URL of the page
-# Returns page data, on error returns empty page
-# ------------------------------------------------------------------------
 def get_page(context, url):
+    """Fetches a page from given web site
 
-    if debug:
+    @param context: Connection context
+    @param url: URL of the page
+
+    @return: page data, on error returns empty page
+    """
+    if DEBUG:
         print(f"Fetching: {url}")
 
     req = urllib.request.Request(url, headers=context['headers'])
@@ -99,90 +99,89 @@ def get_page(context, url):
     return text
 
 
-# ------------------------------------------------------------------------
-# Fetches builds for given evaluation
-# context = Connection context
-# Returns a list of build numbers
-# ------------------------------------------------------------------------
-def get_builds(context, eval):
-    text = get_page(context, f"{context['hydra_url']}eval/{eval}")
+def get_builds(context, evaluation):
+    """Fetches builds for given evaluation
+
+    @param context: Connection context
+
+    @return: a list of build numbers
+    """
+    text = get_page(context, f"{context['hydra_url']}eval/{evaluation}")
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     builds = []
     for link in reversed(soup.find_all("a", {"class": "row-link"})):
         build = convert_int(link.text.strip(), -1)
         if build != -1:
-            if debug:
+            if DEBUG:
                 print(f"Found build {build}")
             builds.append(build)
 
-    if debug and len(builds) == 0:
+    if DEBUG and len(builds) == 0:
         print("No builds found")
 
     return builds
 
 
-# ------------------------------------------------------------------------
-# Reads handled builds from handled builds file
-# filename = Name of the handled builds file
-# Returns a list of build numbers
-# ------------------------------------------------------------------------
 def get_handled(filename):
+    """Reads handled builds from handled builds file
+
+    @param filename: Name of the handled builds file
+
+    @return: a list of build numbers
+    """
     handled = []
     try:
-        file = open(filename, "r")
-        file_lines = file.read()
-        file.close()
+        with open(filename, "r", encoding="utf-8") as handled_file:
+            file_lines = handled_file.read()
+            build_ids = file_lines.split("\n")
 
-        shandled = file_lines.split("\n")
-
-        for bs in shandled:
-            if bs != "":
-                ci = convert_int(bs, -1)
-                if ci != -1:
-                    handled.append(ci)
+        for bid in build_ids:
+            if bid != "":
+                as_int = convert_int(bid, -1)
+                if as_int != -1:
+                    handled.append(as_int)
                 else:
-                    print(
-                        f"Weird build number in handled builds file: {bs}", file=sys.stderr)
+                    print(f"Weird build number in handled builds file: {bid}",
+                          file=sys.stderr)
 
-        if debug:
+        if DEBUG:
             print(f"handled = {handled}")
 
     except FileNotFoundError:
-        if debug:
+        if DEBUG:
             print(f"{filename} not found")
 
-    except PermissionError as pe:
-        print(f"Cannot read {filename}: {pe.strerror}", file=sys.stderr)
+    except PermissionError as perm_error:
+        print(f"Cannot read {filename}: {perm_error.strerror}",
+              file=sys.stderr)
         sys.exit(1)
 
     return handled
 
 
-# ------------------------------------------------------------------------
-# Writes handled builds into handled builds file
-# filename = name of the handled builds file
-# handled = list of handled build numbers
-# ------------------------------------------------------------------------
 def update_handled(filename, handled):
+    """Writes handled builds into handled builds file
+
+    @param filename: name of the handled builds file
+    @param handled: list of handled build numbers
+    """
     handled.sort()
     try:
-        file = open(filename, "w")
-        for build in handled:
-            file.write(f"{build}\n")
-        file.close()
+        with open(filename, "w", encoding="utf-8") as handled_file:
+            for build in handled:
+                handled_file.write(f"{build}\n")
 
-    except PermissionError as pe:
-        print(f"Cannot update {filename}: {pe.strerror}", file=sys.stderr)
+    except PermissionError as perm_error:
+        print(
+            f"Cannot update {filename}: {perm_error.strerror}", file=sys.stderr)
         sys.exit(1)
 
 
-# ------------------------------------------------------------------------
-# Get info provided by the Hydra postbuild script
-# ------------------------------------------------------------------------
-def get_postbuild_info(context: dict, hash: str, binfo: dict):
+def get_postbuild_info(context: dict, log_hash: str, binfo: dict):
+    """Get info provided by the Hydra postbuild script"""
     # Get run command log by hash
-    text = get_page(context, f"{context['hydra_url']}runcommandlog/{hash}")
+    text = get_page(context, f"{context['hydra_url']}runcommandlog/{log_hash}")
     # Convert bytes to string
     text = text.decode("utf-8")
     # Create regex pattern that matches simple variable="value" assignments
@@ -199,9 +198,7 @@ def get_postbuild_info(context: dict, hash: str, binfo: dict):
             binfo[varname] = value
 
 
-# ------------------------------------------------------------------------
 # Constant data used by following get_build_info function
-# ------------------------------------------------------------------------
 summarykeys = {
     "Build ID": 0,
     "Status": 1,
@@ -222,45 +219,45 @@ detailkeys = [
     "Closure size",
     "Output size",
 ]
-# ------------------------------------------------------------------------
-# Fetches information for given build number
-# Returns a dictionary with information of the build
-# context = Connection context
-# bnum = Build ID
-# ------------------------------------------------------------------------
 
 
 def get_build_info(context, bnum):
+    """Fetches information for given build number
+
+    @param context: Connection context
+    @param bnum: Build ID
+
+    @return a dictionary with information of the build
+    """
     text = get_page(context, f"{context['hydra_url']}build/{bnum}")
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     binfo = {}
 
     for div in soup.find_all("div", {"id": "tabs-summary"}):
-        for th in div.find_all("th"):
-            hdr = th.text.strip().rstrip(':')
+        for header in div.find_all("th"):
+            hdr = header.text.strip().rstrip(':')
             val = summarykeys.get(hdr)
-            if val != None:
+            if val is not None:
                 if val == -1:
                     break
 
                 try:
-                    data = th.find_next_sibling().contents[val]
+                    data = header.find_next_sibling().contents[val]
                     if data.name == "time":
                         binfo[hdr] = data['data-timestamp']
                     else:
                         binfo[hdr] = data.text.strip()
                 except (IndexError, AttributeError):
-                    if debug:
+                    if DEBUG:
                         print(f"Trouble getting {hdr}")
-                    pass
 
     for div in soup.find_all("div", {"id": "tabs-details"}):
-        for th in div.find_all("th"):
-            hdr = th.text.strip().rstrip(':').replace('(', '').replace(')', '')
+        for header in div.find_all("th"):
+            hdr = header.text.strip().rstrip(':').replace('(', '').replace(')', '')
             if hdr in detailkeys:
                 try:
-                    data = th.find_next_sibling().contents[0]
+                    data = header.find_next_sibling().contents[0]
                     if data.name == "time":
                         binfo[hdr] = data['data-timestamp']
                     else:
@@ -269,26 +266,24 @@ def get_build_info(context, bnum):
                             binfo[hdr] = val
 
                 except (IndexError, AttributeError):
-                    if debug:
+                    if DEBUG:
                         print(f"Trouble getting {hdr}")
-                    pass
 
     inputs = []
     for div in soup.find_all("div", {"id": "tabs-buildinputs"}):
         for tbody in div.find_all("tbody"):
-            for tr in tbody.find_all("tr"):
-                tds = tr.find_all("td")
+            for row in tbody.find_all("tr"):
+                tds = row.find_all("td")
                 try:
-                    input = tds[0].text.strip()
-                    source = tds[2].text.strip()
-                    hash = tds[3].text.strip()
-                    inputs.append({"Name": input,
-                                   "Hash": hash,
-                                   "Source": source})
+                    input_name = tds[0].text.strip()
+                    input_source = tds[2].text.strip()
+                    input_hash = tds[3].text.strip()
+                    inputs.append({"Name": input_name,
+                                   "Hash": input_hash,
+                                   "Source": input_source})
                 except IndexError:
-                    if debug:
+                    if DEBUG:
                         print("Trouble getting build inputs")
-                    pass
     if len(inputs) > 0:
         binfo['Inputs'] = inputs
     binfo['Output store paths'] = binfo['Output store paths'].split(' ')
@@ -297,26 +292,31 @@ def get_build_info(context, bnum):
 
     # Find run command log hash entries for build
     loghash = None
-    for a in soup.find_all("a", {"class": "btn btn-secondary btn-sm"}):
-        l = a.get('href')
-        if l != None and l.find("/runcommandlog/") != -1 and l.endswith("/raw"):
-            loghash = l.split("/")[-2]
+    for link in soup.find_all("a", {"class": "btn btn-secondary btn-sm"}):
+        href = link.get('href')
+        if (
+            href is not None
+            and href.find("/runcommandlog/") != -1
+            and href.endswith("/raw")
+        ):
+            loghash = href.split("/")[-2]
             # First one should be latest, no need to dig deeper
             break
 
     # If found, then process log for post build data
-    if loghash != None:
+    if loghash is not None:
         get_postbuild_info(context, loghash, binfo)
 
     return binfo
 
 
-# ------------------------------------------------------------------------
-# Sets environment variables based on given dictionary
-# binfo = Dictionary containing build information
-# Returns environment dictionary
-# ------------------------------------------------------------------------
 def set_env(binfo):
+    """Sets environment variables based on given dictionary
+
+    @param binfo: Dictionary containing build information
+
+    @return: environment dictionary
+    """
     env = os.environ.copy()
 
     for key in binfo:
@@ -343,31 +343,31 @@ def set_env(binfo):
     return env
 
 
-# ------------------------------------------------------------------------
-# Saves given given build information dictionary in json format
-# binfo = Dictionary containing build information
-# ------------------------------------------------------------------------
 def save_json(binfo):
+    """Saves given given build information dictionary in json format
+
+    @param binfo: Dictionary containing build information
+    """
     filename = f"{binfo['Build ID']}.json"
-    if debug:
+    if DEBUG:
         print(f"Writing json info into {filename}")
 
     json_obj = json.dumps(binfo, indent=2)
 
     try:
-        with open(filename, "w") as outf:
+        with open(filename, "w", encoding="utf-8") as outf:
             outf.write(json_obj)
 
-    except PermissionError as pe:
-        print(f"Could not write {pe.filename}: {pe.strerror}", file=sys.stderr)
+    except PermissionError as perm_error:
+        print(f"Could not write {perm_error.filename}: {perm_error.strerror}",
+              file=sys.stderr)
         sys.exit(1)
 
 
-# ------------------------------------------------------------------------
-# Gets projects from a hydra site
-# context = Connection context
-# ------------------------------------------------------------------------
 def get_projects(context):
+    """Gets projects from a hydra site
+    @param context: Connection context
+    """
     text = get_page(context, context['hydra_url'])
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
@@ -376,38 +376,41 @@ def get_projects(context):
     disableds = soup.find_all("span", {"class": "disabled-project"})
 
     plist = []
-    for p in projects:
-        plist.append(p.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for proj in projects:
+        plist.append(
+            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     hlist = []
-    for h in hiddens:
-        hlist.append(h.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for proj in hiddens:
+        hlist.append(
+            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     dlist = []
-    for d in disableds:
-        dlist.append(d.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for proj in disableds:
+        dlist.append(
+            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
-    if context['hid_proj'] == False:
-        for h in hlist:
-            if h in plist:
-                plist.remove(h)
+    if context['hid_proj'] is False:
+        for proj in hlist:
+            if proj in plist:
+                plist.remove(proj)
 
-    if context['dis_proj'] == False:
-        for d in dlist:
-            if d in plist:
-                plist.remove(d)
+    if context['dis_proj'] is False:
+        for proj in dlist:
+            if proj in plist:
+                plist.remove(proj)
 
-    if debug:
+    if DEBUG:
         print("Found projects: ", plist)
 
     return plist
 
 
-# ------------------------------------------------------------------------
-# Gets jobsets for a given hydra project
-# context = Connection context
-# ------------------------------------------------------------------------
 def get_jobsets(context, project):
+    """Gets jobsets for a given hydra project
+
+    @param context: Connection context
+    """
     text = get_page(context, f"{context['hydra_url']}project/{project}")
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
@@ -416,42 +419,44 @@ def get_jobsets(context, project):
     disableds = soup.find_all("span", {"class": "disabled-jobset"})
 
     jlist = []
-    for j in jobsets:
-        jlist.append(j.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for jobset in jobsets:
+        jlist.append(jobset.find(
+            "a", {"class": "row-link"})["href"].split("/")[-1])
 
     hlist = []
-    for h in hiddens:
-        hlist.append(d.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for jobset in hiddens:
+        hlist.append(jobset.find(
+            "a", {"class": "row-link"})["href"].split("/")[-1])
 
     dlist = []
-    for d in disableds:
-        dlist.append(d.find("a", {"class": "row-link"})["href"].split("/")[-1])
+    for jobset in disableds:
+        dlist.append(jobset.find(
+            "a", {"class": "row-link"})["href"].split("/")[-1])
 
-    if context['hid_jobset'] == False:
-        for h in hlist:
-            if h in jlist:
-                jlist.remove(h)
+    if context['hid_jobset'] is False:
+        for jobset in hlist:
+            if jobset in jlist:
+                jlist.remove(jobset)
 
-    if context['dis_jobset'] == False:
-        for d in dlist:
-            if d in jlist:
-                jlist.remove(d)
+    if context['dis_jobset'] is False:
+        for jobset in dlist:
+            if jobset in jlist:
+                jlist.remove(jobset)
 
-    if debug:
+    if DEBUG:
         print("Found jobsets: ", jlist)
 
     return jlist
 
-# ------------------------------------------------------------------------
-# Handles a given jobset of given project
-# context = Connection context
-# project = Project name
-# jobset = Jobset name
-# handled = list of handled builds
-# ------------------------------------------------------------------------
-
 
 def handle_jobset(context, project, jobset, handled):
+    """Handles a given jobset of given project
+
+    @param context: Connection context
+    @param project: Project name
+    @param jobset: Jobset name
+    @param handled: list of handled builds
+    """
     # It is assumed here that all evaluations containing builds that need processing
     # are found on the first page of evaluations listing
     text = get_page(
@@ -475,15 +480,15 @@ def handle_jobset(context, project, jobset, handled):
             buildid = convert_int(binfo.get('Build ID'), -1)
 
             if buildid != i:
-                if debug:
-                    print(
-                        f"Build ID mismatch: build id on page = {buildid}, build id requested = {i}, skipping")
+                if DEBUG:
+                    print(f"Build ID mismatch: build id on page = {buildid}, "
+                          f"build id requested = {i}, skipping")
                 continue
 
             status = binfo.get('Status', 'Unknown')
 
-            if status == "Scheduled to be built" or status == "Build in progress":
-                if debug:
+            if status in ("Scheduled to be built", "Build in progress"):
+                if DEBUG:
                     print(f"Build {i} not finished yet, skipping")
                 continue
 
@@ -495,133 +500,131 @@ def handle_jobset(context, project, jobset, handled):
                 env = set_env(binfo)
                 if context['json_en']:
                     save_json(binfo)
-                if debug:
+                if DEBUG:
                     print(f"Handling {i} " + "-" * 60)
 
                 # Run the user specified action with build info in environment
-                sp = subprocess.run(context['action'], shell=True, env=env)
+                result = subprocess.run(context['action'], shell=True,
+                                        env=env, check=False)
 
-                if sp.returncode == 0:
+                if result.returncode == 0:
                     new_handled.append(i)
-                    if debug:
+                    if DEBUG:
                         print("Handling successful " + "-" * 55)
                 else:
-                    if debug:
-                        print(f"Action failed with code: {sp.returncode}")
+                    if DEBUG:
+                        print(f"Action failed with code: {result.returncode}")
             else:
-                if debug:
+                if DEBUG:
                     print(f"Build {i} has failed, just marking as handled")
                 new_handled.append(i)
         else:
-            if debug:
+            if DEBUG:
                 print(f"Build {i} already handled")
 
     return new_handled
 
 
-# ------------------------------------------------------------------------
-# locked main program, called only if lock was aqcuired successfully
-# context = Connection context
-# ------------------------------------------------------------------------
 def main_locked(context):
+    """locked main program, called only if lock was aqcuired successfully
+
+    @param context: Connection context
+    """
     context['hydra_url'] = f"https://{context['server']}/"
-    context['headers'] = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                          'Accept-Encoding': 'gzip, deflate',
-                          'User-Agent': 'hydrascraper.py v1.0'}
+    context['headers'] = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'User-Agent': 'hydrascraper.py v1.0'
+    }
 
     handled = get_handled(context['handled_file'])
 
     projects = get_projects(context)
     projects = list(filter(context['re_p'].match, projects))
-    if debug:
+    if DEBUG:
         print("Selected projects: ", projects)
 
     jobsets = {}
-    for p in projects:
-        jobsets[p] = get_jobsets(context, p)
+    for proj in projects:
+        jobsets[proj] = get_jobsets(context, proj)
 
-    for p in projects:
-        jobsets[p] = list(filter(context['re_js'].match, jobsets[p]))
-        if debug:
-            print(f"{p} selected jobsets: {jobsets[p]}")
+    for proj in projects:
+        jobsets[proj] = list(filter(context['re_js'].match, jobsets[proj]))
+        if DEBUG:
+            print(f"{proj} selected jobsets: {jobsets[proj]}")
 
-    for p in projects:
-        project = p
-        for j in jobsets[p]:
-            jobset = j
+    for project in projects:
+        for jobset in jobsets[project]:
             handled += handle_jobset(context, project, jobset, handled)
 
     update_handled(context['handled_file'], handled)
 
 
-# ------------------------------------------------------------------------
-# Enable JSON output in context
-# context = Connection context
-# ------------------------------------------------------------------------
 def json_e(context):
+    """Enable JSON output in context
+
+    @param context: Connection context
+    """
     context['json_en'] = True
-    if debug:
+    if DEBUG:
         print("JSON enabled")
 
 
-# ------------------------------------------------------------------------
-# Set global debug flag
-# ------------------------------------------------------------------------
 def debug_e(_):
-    global debug
-    debug = 1
+    """Set global debug flag"""
+    global DEBUG
+    DEBUG = 1
     print("Debug enabled")
 
 
-# ------------------------------------------------------------------------
-# Set hidden projects flag in context
-# context = Connection context
-# ------------------------------------------------------------------------
 def hp_e(context):
+    """Set hidden projects flag in context
+
+    @param context: Connection context
+    """
     context['hid_proj'] = True
-    if debug:
+    if DEBUG:
         print("Including hidden projects")
 
 
-# ------------------------------------------------------------------------
-# Set disabled projects flag in context
-# context = Connection context
-# ------------------------------------------------------------------------
 def dp_e(context):
+    """Set disabled projects flag in context
+
+    @param context: Connection context
+    """
     context['dis_proj'] = True
-    if debug:
+    if DEBUG:
         print("Including disabled projects")
 
 
-# ------------------------------------------------------------------------
-# Set hidden jobsets flag in context
-# context = Connection context
-# ------------------------------------------------------------------------
 def hj_e(context):
+    """Set hidden jobsets flag in context
+
+    @param context: Connection context
+    """
     context['hid_jobset'] = True
-    if debug:
+    if DEBUG:
         print("Including hidden jobsets")
 
 
-# ------------------------------------------------------------------------
-# Set disabled jobsets flag in context
-# context = Connection context
-# ------------------------------------------------------------------------
 def dj_e(context):
-    context['dis_jobset'] = True
-    if debug:
-        print("Including disabled jobsets")
+    """Set disabled jobsets flag in context
 
-# ------------------------------------------------------------------------
-# Main function
-# argv = Command line parameters
-# ------------------------------------------------------------------------
+    @param context: Connection context
+    """
+    context['dis_jobset'] = True
+    if DEBUG:
+        print("Including disabled jobsets")
 
 
 def main(argv):
-    global debug
+    """Main function
+
+    @param argv: Command line parameters
+    """
+    global DEBUG
     # Set debug if set in environment
-    debug = convert_int(os.getenv("DEBUG"))
+    DEBUG = convert_int(os.getenv("DEBUG"))
 
     # Map options to functions setting the flags
     argfu = {"-json": json_e,
@@ -641,33 +644,33 @@ def main(argv):
 
     # Help user, too few arguments given
     if len(argv) < 5:
-        help()
+        send_help()
 
     context['server'] = argv[0]
 
-    r = []
+    regexes = []
     for i in [0, 1]:
         try:
             # Create regular expression objects of project and jobset strings
-            r.append(re.compile(argv[i + 1]))
-        except re.error as e:
-            if e.pos != None:
+            regexes.append(re.compile(argv[i + 1]))
+        except re.error as error:
+            if error.pos is not None:
                 print(argv[i + 1], file=sys.stderr)
-                print(" " * e.pos + "^", file=sys.stderr)
-            print(f"Regular expression error: {e.msg}", file=sys.stderr)
+                print(" " * error.pos + "^", file=sys.stderr)
+            print(f"Regular expression error: {error.msg}", file=sys.stderr)
             sys.exit(1)
 
-    context['re_p'] = r[0]
-    context['re_js'] = r[1]
+    context['re_p'] = regexes[0]
+    context['re_js'] = regexes[1]
     context['handled_file'] = argv[3]
     context['action'] = argv[4]
 
     if len(argv) > 5:
         # Process options
         for i in range(5, len(argv)):
-            f = argfu.get(argv[i], None)
-            if f != None:
-                f(context)
+            func = argfu.get(argv[i], None)
+            if func is not None:
+                func(context)
             else:
                 print(f"Invalid argument: {argv[i]}", file=sys.stderr)
                 sys.exit(1)
@@ -677,22 +680,20 @@ def main(argv):
         lock.acquire(timeout=0)
         main_locked(context)
 
-    except filelock.Timeout as to:
-        if debug:
-            print(f"Unable to get lock {to.lock_file}")
-            print(
-                "If no other hydrascrapers are running, check permissions and/or delete the lock file")
+    except filelock.Timeout as timeout:
+        if DEBUG:
+            print(f"Unable to get lock {timeout.lock_file}")
+            print("If no other hydrascrapers are running, "
+                  "check permissions and/or delete the lock file")
 
-    except PermissionError as pe:
+    except PermissionError as perm_error:
         print(
-            f"Could not aquire {argv[3]}.lock: {pe.strerror}", file=sys.stderr)
+            f"Could not aquire {argv[3]}.lock: {perm_error.strerror}", file=sys.stderr)
 
     finally:
         lock.release()
 
 
-# ------------------------------------------------------------------------
 # Run main when executed from command line
-# ------------------------------------------------------------------------
 if __name__ == "__main__":
     main(sys.argv[1:])

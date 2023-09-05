@@ -2,28 +2,27 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
-# Action script for hydra scraper
-# ------------------------------------------------------------------------
+"""
+Action script for hydra scraper
+"""
 import json
 import os
 import subprocess
 import sys
 
 
-# ------------------------------------------------------------------------
-# Prints an error message and exits
-# txt = Error message
-# code = optional exit code
-# ------------------------------------------------------------------------
 def perror(txt, code=1):
+    """Prints an error message and exits
+
+    @param txt: Error message
+    @param code: optional exit code
+    """
     print(txt, file=sys.stderr)
     sys.exit(code)
 
 
-# ------------------------------------------------------------------------
-# Copies stuff from cache
-# ------------------------------------------------------------------------
 def nix_copy(cacheurl: str, paths: list[str], derivation: bool = False):
+    """Copies stuff from cache"""
     if len(paths) < 1:
         return
 
@@ -33,29 +32,28 @@ def nix_copy(cacheurl: str, paths: list[str], derivation: bool = False):
 
     nixcopy.extend(paths)
 
-    result = subprocess.run(nixcopy, stdout=subprocess.PIPE)
+    result = subprocess.run(nixcopy, stdout=subprocess.PIPE, check=False)
     if result.returncode != 0:
         perror(result.stderr, result.returncode)
 
 
-# ------------------------------------------------------------------------
-# Convert hydra json style outputs to plain list of paths
-# iout = outputs list in hydra json style
-# returns = list of paths (maybe empty)
-# ------------------------------------------------------------------------
 def get_outputs(iout: list[dict] | None) -> list:
+    """Convert hydra json style outputs to plain list of paths
+
+    @param iout: outputs list in hydra json style
+
+    @return: list of paths (maybe empty)
+    """
     oout = []
-    if iout != None:
+    if iout is not None:
         for output in iout:
             outp = output.get('path')
-            if outp != None:
+            if outp is not None:
                 oout.append(outp)
     return oout
 
 
-# ------------------------------------------------------------------------
 # Translate table for json items, used by translate function
-# ------------------------------------------------------------------------
 transtable = {
     "build": "Build ID",
     "system": "System",
@@ -73,36 +71,34 @@ transtable = {
     "license": "License",
 }
 
-# ------------------------------------------------------------------------
-# Translate hydra post build json to more readable (scraped-like) json
-# ibinfo: dictionary containing hydra post build json
-# obinfo: dictionary containing scraped values
-#   values overwritten or appended, may be empty
-# ------------------------------------------------------------------------
-
 
 def translate(ibinfo: dict, obinfo: dict):
-    for k in transtable:
-        nk = transtable[k]
-        val = ibinfo.get(k)
-        if val != None:
+    """Translate hydra post build json to more readable (scraped-like) json
+
+    @param ibinfo: dictionary containing hydra post build json
+    @param obinfo: dictionary containing scraped values.
+                   values overwritten or appended, may be empty
+    """
+    for old_name, new_name in transtable.items():
+        val = ibinfo.get(old_name)
+        if val is not None:
             # Convert all to strings
             val = str(val)
-            oval = obinfo.get(nk)
+            oval = obinfo.get(new_name)
             # Check and warn if there's contradicting info
-            if oval != None and oval != val:
+            if oval is not None and oval != val:
                 print("Warning! differing build information:", file=sys.stderr)
-                print(f"  {k} = {val}", file=sys.stderr)
-                print(f"  {nk} = {oval}", file=sys.stderr)
+                print(f"  {old_name} = {val}", file=sys.stderr)
+                print(f"  {new_name} = {oval}", file=sys.stderr)
             # Trust the nix-store json file rather than scraped stuff
-            obinfo[nk] = val
+            obinfo[new_name] = val
 
     # Handle outputs separately
     ooutputs = get_outputs(ibinfo.get('outputs'))
 
     # Check outputs also
     obio = obinfo.get('Output store paths')
-    if obio != None and obio != ooutputs:
+    if obio is not None and obio != ooutputs:
         print("Warning! differing build information:", file=sys.stderr)
         print(f"  outputs = {ooutputs}", file=sys.stderr)
         print(f"  Output store paths = {obio}", file=sys.stderr)
@@ -110,27 +106,25 @@ def translate(ibinfo: dict, obinfo: dict):
     obinfo['Output store paths'] = ooutputs
 
 
-# ------------------------------------------------------------------------
-# Get minimal build info from environment variables
-# (Rest should be in post build json file)
-# return = dictionary of build info
-# ------------------------------------------------------------------------
 def min_info_from_env() -> dict:
+    """Get minimal build info from environment variables
+    (Rest should be in post build json file)
+
+    @return: dictionary of build info
+    """
     envl = ["Server", "Postbuild info",
             "Maintainers", "Closure size", "Output size"]
     res = {}
 
-    for k in envl:
-        ev = os.getenv(f"HYDRA_{k.upper().replace(' ','_')}")
-        if ev != None:
-            res[k] = ev
+    for name in envl:
+        env_value = os.getenv(f"HYDRA_{name.upper().replace(' ','_')}")
+        if env_value is not None:
+            res[name] = env_value
     return res
 
 
-# ------------------------------------------------------------------------
-# Main function
-# ------------------------------------------------------------------------
-def main(argv: list[str]):
+def main():
+    """Main function"""
     cacheurl = "https://cache.vedenemo.dev"
     wlist = "wlist.txt"
 
@@ -141,27 +135,32 @@ def main(argv: list[str]):
     wlist = os.getenv("ACTION_WLISTFILE", wlist)
 
     bnum = os.getenv("HYDRA_BUILD_ID")
-    if bnum == None:
+    if bnum is None:
         perror("Error: HYDRA_BUILD_ID not defined")
 
     print(f"Hydra Build ID: {bnum}")
 
     jsonf = os.getenv("HYDRA_POSTBUILD_INFO")
-    if jsonf == None:
-        # Return nonzero so this build will be retried, this could happen if scraping was done at the exact
-        # time that other build info was available on Hydra, but runcommands were not finished yet.
+    if jsonf is None:
+        # Return nonzero so this build will be retried.
+        # this could happen if scraping was done at the exact time that build
+        # info was available on Hydra, but runcommands were not finished yet.
         perror("Error: HYDRA_POSTBUILD_INFO not defined")
 
     # Copy build info json file
     nix_copy(cacheurl, [jsonf])
 
-    with open(jsonf, "r") as fh:
-        binfo = json.load(fh)
+    with open(jsonf, "r", encoding="utf-8") as pb_file:
+        binfo = json.load(pb_file)
 
     # Check status of the build, we are interested only in finished builds
-    if binfo.get('buildStatus') != 0 or binfo.get('finished') != True or binfo.get('event') != "buildFinished":
-        perror(
-            f"Unexpected build status: {binfo.get('buildStatus')}, ignoring", 0)
+    if (
+        binfo.get('buildStatus') != 0
+        or binfo.get('finished') is not True
+        or binfo.get('event') != "buildFinished"
+    ):
+        perror(f"Unexpected build status: {binfo.get('buildStatus')}"
+               ", ignoring", 0)
 
     # Find output paths
     outps = get_outputs(binfo.get('outputs'))
@@ -174,34 +173,32 @@ def main(argv: list[str]):
 
     # Copy derivation
     drv = binfo.get('drvPath')
-    if drv != None:
+    if drv is not None:
         nix_copy(cacheurl, [drv], derivation=True)
 
     # Copy image link
     link = binfo.get('imageLink')
-    if link != None:
+    if link is not None:
         nix_copy(cacheurl, [link])
 
     try:
-        with open(f"{bnum}.json", "r") as jf:
-            combo = json.load(jf)
+        with open(f"{bnum}.json", "r", encoding="utf-8") as json_file:
+            combo = json.load(json_file)
     except FileNotFoundError:
-        # If scraped json file is not available, use minimal build info from env
+        # If scraped json is not available, use minimal build info from env
         combo = min_info_from_env()
 
     translate(binfo, combo)
 
     # Write combined info to scraped build info file
-    with open(f"{bnum}.json", "w") as jf:
-        json.dump(combo, jf, indent=2)
+    with open(f"{bnum}.json", "w", encoding="utf-8") as json_file:
+        json.dump(combo, json_file, indent=2)
 
     # Add build to post processing list
-    with open(wlist, "a") as wf:
-        print(f"{bnum}:{' '.join(outps)}", file=wf)
+    with open(wlist, "a", encoding="utf-8") as wlist_file:
+        print(f"{bnum}:{' '.join(outps)}", file=wlist_file)
 
 
-# ------------------------------------------------------------------------
 # Run main when executed from command line
-# ------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
