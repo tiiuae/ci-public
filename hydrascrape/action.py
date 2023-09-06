@@ -63,7 +63,6 @@ transtable = {
     "stopTime": "Build finished",
     "drvPath": "Derivation store path",
     "job": "Job",
-    "imageLink": "Postbuild link",
     "project": "Project",
     "jobset": "Jobset",
     "homepage": "Homepage",
@@ -136,22 +135,34 @@ def main():
 
     bnum = os.getenv("HYDRA_BUILD_ID")
     if bnum is None:
-        perror("Error: HYDRA_BUILD_ID not defined")
+        perror("Error: HYDRA_BUILD_ID not defined", 0)
 
     print(f"Hydra Build ID: {bnum}")
 
-    jsonf = os.getenv("HYDRA_POSTBUILD_INFO")
-    if jsonf is None:
-        # Return nonzero so this build will be retried.
-        # this could happen if scraping was done at the exact time that build
-        # info was available on Hydra, but runcommands were not finished yet.
-        perror("Error: HYDRA_POSTBUILD_INFO not defined")
+    provenance_file = os.getenv("HYDRA_PROVENANCE_FILE")
+    if provenance_file is None:
+        perror("Error: HYDRA_PROVENANCE_FILE not defined", 0)
 
-    # Copy build info json file
-    nix_copy(cacheurl, [jsonf])
+    outputs = []
+    for key, value in os.environ.items():
+        if key.startswith("HYDRA_POSTBUILD_PACKAGE_OUTPUT_PATH_"):
+            index = int(key[-1])
+            outputs.append([
+                value,
+                os.getenv(f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
+            ])
 
-    with open(jsonf, "r", encoding="utf-8") as pb_file:
-        binfo = json.load(pb_file)
+    if not outputs:
+        perror("Error: Not any POSTBUILD_PACKAGE_OUTPUT defined", 0)
+
+    # Copy provenance file
+    nix_copy(cacheurl, [provenance_file])
+
+    with open(provenance_file, "r", encoding="utf-8") as pb_file:
+        provenance = json.load(pb_file)
+
+    # get buildinfo from provenance file
+    binfo = provenance["hydra_buildInfo"]
 
     # Check status of the build, we are interested only in finished builds
     if (
@@ -162,24 +173,13 @@ def main():
         perror(f"Unexpected build status: {binfo.get('buildStatus')}"
                ", ignoring", 0)
 
-    # Find output paths
-    outps = get_outputs(binfo.get('outputs'))
-
-    if len(outps) == 0:
-        perror("Outputs not found, ignoring", 0)
-
     # Copy output paths
-    nix_copy(cacheurl, outps)
+    nix_copy(cacheurl, sum(outputs, []))
 
     # Copy derivation
     drv = binfo.get('drvPath')
     if drv is not None:
         nix_copy(cacheurl, [drv], derivation=True)
-
-    # Copy image link
-    link = binfo.get('imageLink')
-    if link is not None:
-        nix_copy(cacheurl, [link])
 
     try:
         with open(f"{bnum}.json", "r", encoding="utf-8") as json_file:
@@ -190,13 +190,29 @@ def main():
 
     translate(binfo, combo)
 
+    package = os.getenv("HYDRA_POSTBUILD_PACKAGE")
+    combo["Output package name"] = package
+
+    combo["Outputs"] = [
+        {
+            "output": o[0],
+            "signature": o[1],
+        }
+        for o in outputs
+    ]
+
+    combo["Provenance"] = {
+        "path": provenance_file,
+        "signature": os.getenv("HYDRA_PROVENANCE_SIGNATURE")
+    }
+
     # Write combined info to scraped build info file
     with open(f"{bnum}.json", "w", encoding="utf-8") as json_file:
         json.dump(combo, json_file, indent=2)
 
     # Add build to post processing list
     with open(wlist, "a", encoding="utf-8") as wlist_file:
-        print(f"{bnum}:{' '.join(outps)}", file=wlist_file)
+        print(f"{bnum}:{' '.join(o[0] for o in outputs)}", file=wlist_file)
 
 
 # Run main when executed from command line
