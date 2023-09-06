@@ -2,3 +2,4 @@
 *.lock
 !/Pipfile.lock
 *.json
+wlist.txt

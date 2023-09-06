@@ -107,7 +107,7 @@ for (( i=0; i < NUM_OUTPUTS; i++ )); do
     OUTPUT="$(jq -r ".outputs[$i].path" "$HYDRA_JSON")"
     # Add output to the package
     tar rf "$PACKAGE" -C /nix/store "${OUTPUT##/nix/store/}"
-    echo "${PREFIX}_OUTPUT[${i}]=\"${OUTPUT}\""
+    echo "${PREFIX}_OUTPUT_PATH_${i}=\"${OUTPUT}\""
 
     # Sign the output
     SIGNATURE_FILE="$($SIGNSCRIPT "$OUTPUT")"
@@ -115,7 +115,7 @@ for (( i=0; i < NUM_OUTPUTS; i++ )); do
     if [ -n "$SIGNATURE_FILE" ]; then
         # Add signature to package
         tar rf "$PACKAGE" -C /nix/store "${SIGNATURE_FILE##/nix/store/}"
-        echo "${PREFIX}_OUTPUT_SIGNATURE[${i}]=\"${SIGNATURE_FILE}\""
+        echo "${PREFIX}_OUTPUT_SIGNATURE_${i}=\"${SIGNATURE_FILE}\""
     fi
 done
 

@@ -197,6 +197,8 @@ def get_postbuild_info(context: dict, log_hash: str, binfo: dict):
             value = line.split('"')[1]
             binfo[varname] = value
 
+    binfo["RunCommand status"] = "Succeeded"
+
 
 # Constant data used by following get_build_info function
 summarykeys = {
@@ -292,16 +294,24 @@ def get_build_info(context, bnum):
 
     # Find run command log hash entries for build
     loghash = None
-    for link in soup.find_all("a", {"class": "btn btn-secondary btn-sm"}):
-        href = link.get('href')
-        if (
-            href is not None
-            and href.find("/runcommandlog/") != -1
-            and href.endswith("/raw")
-        ):
-            loghash = href.split("/")[-2]
-            # First one should be latest, no need to dig deeper
-            break
+    binfo["RunCommand status"] = None
+    row = soup.find("div", {"class": "flex-row"})
+    if row is not None:
+        status = row.find("img", {"class": "build-status"})
+        status_text = status.get("title") if status is not None else None
+        if status_text != "Succeeded":
+            binfo["RunCommand status"] = status_text
+        else:
+            for link in row.find_all("a", {"class": "btn btn-secondary btn-sm"}):
+                href = link.get('href')
+                if (
+                    href is not None
+                    and href.find("/runcommandlog/") != -1
+                    and href.endswith("/raw")
+                ):
+                    loghash = href.split("/")[-2]
+                    # break when raw is found we don't need anything else
+                    break
 
     # If found, then process log for post build data
     if loghash is not None:
@@ -493,6 +503,24 @@ def handle_jobset(context, project, jobset, handled):
                 continue
 
             if status == "Success":
+
+                # check postbuild status for succeeded builds only
+                runcmd_status = binfo["RunCommand status"]
+                if runcmd_status is None:
+                    if DEBUG:
+                        print(
+                            f"RunCommands for build {i} are not finished yet, skipping")
+                    continue
+
+                elif runcmd_status != "Succeeded":
+                    # if there is a status but it was not success,
+                    # there is no need to retry later. just mark as handled.
+                    if DEBUG:
+                        print(f"RunCommands for build {i} {runcmd_status}, "
+                              "marking as handled")
+                    new_handled.append(i)
+                    continue
+
                 binfo['Server'] = context['server']
                 binfo['Project'] = project
                 binfo['Jobset'] = jobset
