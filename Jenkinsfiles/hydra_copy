@@ -53,22 +53,23 @@ pipeline {
                     def storepaths = readFile(file: 'wlist.txt')
                     storepaths.split('\n').each{ String line ->
                         def data = line.split(':')
-
+                        def buildId = data[0]
 
                         // Get postBuild Data from .json
-                        def buildData = readJSON file: "${data[0]}.json"
-                        println("BuildID: ${data[0]} Store path: ${buildData['Output store paths'][0]}")
+                        def buildData = readJSON file: "${buildId}.json"
+                        def outputPath = "${buildData['Outputs'][0]['output']}"
+                        println("BuildID: ${buildId} Output path: ${outputPath}")
 
                         // Make directory and copy buildID.json there
-                        sh "mkdir -p ${resultsPath}/${data[0]}"
-                        sh "cp ${data[0]}.json ${resultsPath}/${data[0]}/"
+                        sh "mkdir -p ${resultsPath}/${buildId}"
+                        sh "cp ${buildId}.json ${resultsPath}/${buildId}/"
 
                         if ("${buildData['Job']}".contains("orin-agx")) {
                             //Trigger Orin post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
@@ -77,15 +78,15 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
                                     [$class: 'StringParameterValue', name: 'device', value: "orin-agx"]
                                 ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            } catch (err) {
+                                println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("orin-nx")) {
                             //Trigger Orin post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
@@ -94,15 +95,15 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
                                     [$class: 'StringParameterValue', name: 'device', value: "orin-nx"]
                                 ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            } catch (err) {
+                                println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("generic-x86")) {
                             //Trigger generic-x86_64 post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
@@ -111,15 +112,15 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
                                     [$class: 'StringParameterValue', name: 'device', value: "nuc"]
                                 ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            } catch (err) {
+                                println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug.x86_64-linux")) {
                             //Trigger generic-x86_64 post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${buildData['Output store paths'][0]}/nixos.img"],
-                                    [$class: 'StringParameterValue', name: 'buildID', value: "${data[0]}"],
+                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
@@ -128,8 +129,8 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
                                     [$class: 'StringParameterValue', name: 'device', value: "risc-v"]
                                 ]
-                            }catch (err) {
-                                println("Something went wrong at post processing of: ${data[0]} failed: ${err}")
+                            } catch (err) {
+                                println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else {
                             println("Build was not from wanted job")

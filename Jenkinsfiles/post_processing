@@ -33,17 +33,17 @@ pipeline {
                     build = build(
                         job: "${vulnixJob}", propagate: false,
                         parameters: [
-                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                            [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                            [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                            [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
-                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                    error("Vulnix build failed")
-                      }
+                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                            error("Vulnix build failed")
+                        }
                     }
                 }
             }
@@ -54,17 +54,17 @@ pipeline {
                     build = build(
                         job: "${sbomJob}", propagate: false,
                         parameters: [
-                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                            [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                            [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                            [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
-                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                    error("sbom build failed")
-                      }
+                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                            error("sbom build failed")
+                        }
                     }
                 }
             }
@@ -72,23 +72,23 @@ pipeline {
         stage('vulnsdiff') {
             steps {
                 script {
-                   if ("${params.project}".contains("ghaf-scs-test")) {
-                      build = build(
-                          job: "${vulnsdiffJob}", propagate: false,
-                          parameters: [
-                            [$class: 'StringParameterValue', name: 'vulns_csv_baseline_path', value: "${params.vulns_csv_baseline_path}"],
-                            [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                            [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
-                          ]
-                      )
-                      if(build.result == "SUCCESS") {
-                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
-                      } else {
-                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                      error("vulnsdiff build failed")
+                    if ("${params.project}".contains("ghaf-scs-test")) {
+                        build = build(
+                            job: "${vulnsdiffJob}", propagate: false,
+                            parameters: [
+                                [$class: 'StringParameterValue', name: 'vulns_csv_baseline_path', value: "${params.vulns_csv_baseline_path}"],
+                                [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                                [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"]
+                            ]
+                        )
+                        if(build.result == "SUCCESS") {
+                            echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        } else {
+                            catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                                error("vulnsdiff build failed")
+                            }
                         }
-                      }
-                   }
+                    }
                 }
             }
         }
@@ -98,18 +98,18 @@ pipeline {
                     build = build(
                         job: "${provenanceJob}", propagate: false,
                         parameters: [
-                          [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-                          [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                          [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
-                          [$class: 'StringParameterValue', name: 'builderWorkspace', value: "$WORKSPACE"]
+                            [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                            [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                            [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
+                            [$class: 'StringParameterValue', name: 'builderWorkspace', value: "$WORKSPACE"]
                         ]
                     )
                     if(build.result == "SUCCESS") {
-                      echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
-                      catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                    error("provenance build failed")
-                      }
+                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                            error("provenance build failed")
+                        }
                     }
                 }
             }
@@ -121,20 +121,20 @@ pipeline {
                         build = build(
                             job: "${testJob}", propagate: false,
                             parameters: [
-                              [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
-                              [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
-                              [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
-                              [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
-                              [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                              [$class: 'StringParameterValue', name: 'device', value: "${params.device}"]
+                                [$class: 'StringParameterValue', name: 'image', value: "${params.image}"],
+                                [$class: 'StringParameterValue', name: 'buildID', value: "${params.buildID}"],
+                                [$class: 'StringParameterValue', name: 'resultsPath', value: "${params.resultsPath}"],
+                                [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                [$class: 'StringParameterValue', name: 'device', value: "${params.device}"]
                             ]
                         )
                         if(build.result == "SUCCESS") {
-                          echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                            echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                         } else {
-                          catchError(stageResult: 'FAILURE', buildResult: 'FAILURE'){
-                                        error("${params.device} testset build failed")
-                          }
+                            catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                                error("${params.device} testset build failed")
+                            }
                         }
                     } else {
                         println("No HW tests for this build!")
@@ -144,26 +144,26 @@ pipeline {
         }
         stage('Add post processing timestamp to .json file and create index.html') {
             steps {
-              script {
-                  sh "python3 addtimestamp/add_timestamp.py ${params.resultsPath}/${params.buildID} ${params.buildID}.json"
-              }
+                script {
+                    sh "python3 addtimestamp/add_timestamp.py ${params.resultsPath}/${params.buildID} ${params.buildID}.json"
+                }
             }
         }
         stage('Create index.html and bublish reports') {
             steps {
-              dir("${params.resultsPath}/"){
-                 script {
-                     sh "python3 ~/Jenkins-agent/workspace/${level}/post_processing/indexer/indexer.py /files/images/ /webify/build_reports ${params.buildID}"
-                     if(params.development) {
-                          println("Development: ${params.development}")
-                     } else {
-                          println("Development: ${params.development}")
-                          sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload/build_reports/${params.server}/${params.buildID}"
-                          sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index build_reports/${params.server}/${params.buildID}"
-                     }
-                  }
-              }
+                dir("${params.resultsPath}/"){
+                    script {
+                        sh "python3 ~/Jenkins-agent/workspace/${level}/post_processing/indexer/indexer.py /files/images/ /webify/build_reports ${params.buildID}"
+                        if(params.development) {
+                            println("Development: ${params.development}")
+                        } else {
+                            println("Development: ${params.development}")
+                            sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} sftp_user@95.175.105.23:/upload/build_reports/${params.server}/${params.buildID}"
+                            sh "ssh -i ~/.ssh/trigid_ed25519 script_trigger@95.175.105.23 -- --index build_reports/${params.server}/${params.buildID}"
+                        }
+                    }
+                }
             }
         }
-      }
-  }
+    }
+}
