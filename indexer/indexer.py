@@ -2,16 +2,17 @@
 # SPDX-FileCopyrightText: 2022-2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
+import datetime
+import glob
+import json
+import os
+import re
+import sys
+
 import jinja2
 import markupsafe
-import sys
-import json
-import datetime
-import os
-import glob
-import re
 
-domain=".vedenemo.dev"
+domain = ".vedenemo.dev"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
 sbomfiles = "sbom.*"
@@ -23,27 +24,30 @@ imageprefix = ""
 webifyprefix = ""
 debug = 0
 
+
 def help(argv):
-    print(f"Usage: {argv[0]} IMGPFIX WEBPFIX BUILDDIR")
-    print(f"")
-    print(f"   IMGPFIX = Image dir prefix")
-    print(f"   WEBPFIX = Webify prefix")
-    print(f"  BUILDDIR = build directory")
-    print(f"")
-    print(f"makes an index file with all the build information in the build dir")
-    print(f"Last part (basename) of the build dir needs to be the Build ID of the build being handled")
-    print(f"")
-    print(f"Example: {argv[0]} /files/images /webify/build_reports ./1234")
-    print(f"")
+    print(
+        f"""Usage: {argv[0]} IMGPFIX WEBPFIX BUILDDIR
+
+    IMGPFIX = Image dir prefix
+    WEBPFIX = Webify prefix
+    BUILDDIR = build directory
+
+makes an index file with all the build information in the build dir
+Last part of the build dir needs to be the Build ID of the build being handled
+Example: {argv[0]} /files/images /webify/build_reports ./1234"""
+    )
 
 
 # ------------------------------------------------------------------------
-# Convert string to an int with default value if invalid string given
-# str = String to convert
-# default = Default value which is zero by default
-# Returns an integer, always
-# ------------------------------------------------------------------------
-def convert_int(str, default = 0):
+def convert_int(str, default=0):
+    """Convert string to an int with default value if invalid string given
+
+    @param str: String to convert
+    @param default: Default value which is zero by default
+
+    @return an integer, always
+    """
     # Try converting to integer
     try:
         i = int(str)
@@ -51,6 +55,7 @@ def convert_int(str, default = 0):
     except (ValueError, TypeError):
         i = default
     return i
+
 
 # ------------------------------------------------------------------------
 # Handlers for specific build info items
@@ -66,7 +71,9 @@ def project(prj, binfo):
 
 # ------------------------------------------------------------------------
 def jobset(js, binfo):
-    return f'<A href="https://{binfo["Server"]}/jobset/{binfo["Project"]}/{js}">{js}</A>'
+    return (
+        f'<A href="https://{binfo["Server"]}/jobset/{binfo["Project"]}/{js}">{js}</A>'
+    )
 
 
 # ------------------------------------------------------------------------
@@ -91,13 +98,18 @@ def time_stamp(tim, _):
     except ValueError:
         tim = 0
     dt = datetime.datetime.utcfromtimestamp(tim)
-    return f'<TIME datetime="{dt.strftime("%Y-%m-%dT%H:%M:%SZ")}" data-timestamp="{tim}">{dt.strftime("%Y-%m-%d %H:%M:%S UTC")}</TIME>'
+    return (
+        f'<TIME datetime="{dt.strftime("%Y-%m-%dT%H:%M:%SZ")}" '
+        f'data-timestamp="{tim}">{dt.strftime("%Y-%m-%d %H:%M:%S UTC")}</TIME>'
+    )
 
 
 # ------------------------------------------------------------------------
+
+
 def postbuild_link(out, _):
     o = out.removeprefix("/nix/store/")
-    if imageprefix != None:
+    if imageprefix is not None:
         return f'<A href="{imageprefix}/{o}">{out}</A>'
     else:
         return str(out)
@@ -112,25 +124,31 @@ def homepage(hp, _):
 def inputs(inp, _):
     il = []
     for i in inp:
-        il.append([i["Name"], f'<A href="{i["Source"]}">{i["Source"]}</A>', f'<A href="{i["Source"]}/commit/{i["Hash"]}">{i["Hash"]}</A>'])
+        il.append(
+            [
+                i["Name"],
+                f'<A href="{i["Source"]}">{i["Source"]}</A>',
+                f'<A href="{i["Source"]}/commit/{i["Hash"]}">{i["Hash"]}</A>',
+            ]
+        )
     return il
 
 
 # ------------------------------------------------------------------------
-def get_reports(fglob: str, webifypfx: str=None):
+def get_reports(fglob: str, webifypfx: str = None):
     files = glob.glob(fglob)
     if debug:
         print(files)
     res = []
     for r in files:
         link = f'<A href="{r}">{r}</A>'
-        if webifypfx != None:
+        if webifypfx is not None:
             htn = None
             if r.endswith(".txt"):
                 htn = r.removesuffix(".txt") + ".html"
             elif r.endswith(".csv"):
                 htn = r.removesuffix(".csv") + ".html"
-            if htn != None:
+            if htn is not None:
                 link += f' (<A href="{webifypfx}/{htn}">View as html</A>)'
         res.append(link)
     return res
@@ -139,35 +157,34 @@ def get_reports(fglob: str, webifypfx: str=None):
 # ------------------------------------------------------------------------
 # Map build info items to their handlers
 # ------------------------------------------------------------------------
-handlers =  {
-    'Server': server,
-    'Project': project,
-    'Jobset': jobset,
-    'Job': job,
-    'Build ID': build_id,
-    'Homepage': homepage,
-    'Short description': default,
-    'License': default,
-    'Maintainers': default,
-    'System': default,
-    'Nix name': default,
-    'Queued at': time_stamp,
-    'Build started': time_stamp,
-    'Build finished': time_stamp,
-    'Post processing done at': time_stamp,
-    'Derivation store path': default,
-    'Output store paths': default,
-    'Inputs': inputs,
-    'Closure size': default,
-    'Output size': default,
-    'Postbuild info': default,
-    'Postbuild link': postbuild_link,
+handlers = {
+    "Server": server,
+    "Project": project,
+    "Jobset": jobset,
+    "Job": job,
+    "Build ID": build_id,
+    "Homepage": homepage,
+    "Short description": default,
+    "License": default,
+    "Maintainers": default,
+    "System": default,
+    "Nix name": default,
+    "Queued at": time_stamp,
+    "Build started": time_stamp,
+    "Build finished": time_stamp,
+    "Post processing done at": time_stamp,
+    "Derivation store path": default,
+    "Output store paths": default,
+    "Inputs": inputs,
+    "Closure size": default,
+    "Output size": default,
+    "Postbuild info": default,
+    "Postbuild link": postbuild_link,
 }
 
-# ------------------------------------------------------------------------
-# Main program
-# ------------------------------------------------------------------------
+
 def main(argv: list[str]):
+    """Main program"""
     global debug
     global imageprefix
     global webifyprefix
@@ -191,14 +208,14 @@ def main(argv: list[str]):
     bnum = convert_int(os.path.basename(dir), -1)
 
     if bnum == -1:
-        print("Could not get build number from build dir", file = sys.stderr)
+        print("Could not get build number from build dir", file=sys.stderr)
         sys.exit(1)
 
     # Change to build dir, so we can refer files and directories relatively
     try:
         os.chdir(dir)
-    except:
-        print(f"Could not change to directory {dir}", file = sys.stderr)
+    except Exception:
+        print(f"Could not change to directory {dir}", file=sys.stderr)
         sys.exit(1)
 
     # Build dir should contain <Build ID>.json where all the build info is stored
@@ -211,7 +228,7 @@ def main(argv: list[str]):
         exit(1)
 
     server = data.get("Server")
-    if server == None:
+    if server is None:
         print("No server indicated in json file", file=sys.stderr)
         exit(1)
 
@@ -221,7 +238,7 @@ def main(argv: list[str]):
     webifyprefix += "/" + server
 
     plink = data.get("Postbuild link")
-    if plink == None:
+    if plink is None:
         print("No postbuild link", file=sys.stderr)
         # This will disable the image link creation
         imageprefix = None
@@ -239,7 +256,9 @@ def main(argv: list[str]):
         print(f"imageprefix = {imageprefix}")
         print(f"webifyprefix = {webifyprefix}")
 
-    env = jinja2.Environment(loader=jinja2.PackageLoader('indexer', 'templates'), autoescape=False) #jinja2.select_autoescape(['html']))
+    env = jinja2.Environment(
+        loader=jinja2.PackageLoader("indexer", "templates"), autoescape=False
+    )  # jinja2.select_autoescape(['html']))
     template = env.get_template("index_template.html")
 
     binfo = {}
@@ -266,7 +285,7 @@ def main(argv: list[str]):
     result = {}
     for key in handlers:
         val = binfo.get(key, None)
-        if val != None:
+        if val is not None:
             result[key] = handlers[key](val, binfo)
 
     # Unknown keys will be left unhandled, print them out if debug is on
@@ -278,7 +297,7 @@ def main(argv: list[str]):
     # Find vulnix reports
     rep = get_reports(vulnixfiles, f"{webifyprefix}/{bnum}")
     if rep != []:
-        result['Vulnix report'] = rep
+        result["Vulnix report"] = rep
 
     # Find robot framework logs and reports
     resfils = glob.glob(resultfiles)
@@ -290,9 +309,9 @@ def main(argv: list[str]):
     for rf in resfils:
         with open(rf, "r") as file:
             while True:
-                line = file.readline();
+                line = file.readline()
                 if not line:
-                    print(f"Unable to find name for report {rf}", file = sys.stderr)
+                    print(f"Unable to find name for report {rf}", file=sys.stderr)
                     sys.exit(1)
                 # It is assumed here that reports are from robot framework
                 # And this is why we dig up the name like this
@@ -301,8 +320,8 @@ def main(argv: list[str]):
                         line.index('"fail":0,"label":"All Tests"')
                     except ValueError:
                         success = False
-                    line = line.split('"name":"', maxsplit = 1)[1]
-                    line = line.split('","', maxsplit = 1)[0]
+                    line = line.split('"name":"', maxsplit=1)[1]
+                    line = line.split('","', maxsplit=1)[0]
                     break
         if rf.endswith("log.html"):
             name = str(markupsafe.escape(line)) + " Log"
@@ -310,36 +329,43 @@ def main(argv: list[str]):
             name = str(markupsafe.escape(line)) + " Report"
         tr.append(f'<A href="{rf}">{name}</A>')
     if tr != []:
-        result['Test results'] = tr
+        result["Test results"] = tr
 
     # Find SBOMs
     rep = get_reports(sbomfiles)
     if rep != []:
-        result['SBOM'] = rep
+        result["SBOM"] = rep
 
     # Find vulnxscan reports
     rep = get_reports(vulnxsfiles, f"{webifyprefix}/{bnum}")
     if rep != []:
-        result['Vulnxscan Report'] = rep
+        result["Vulnxscan Report"] = rep
 
     # Find provenance files
     rep = get_reports(provenancefiles)
     if rep != []:
-        result['SLSA Provenance'] = rep
+        result["SLSA Provenance"] = rep
 
     # Find fixed vulnerabilities
     rep = get_reports(vulns_fixed, f"{webifyprefix}/{bnum}")
     if rep != []:
-        result['Fixed vulnerabilities'] = rep
+        result["Fixed vulnerabilities"] = rep
 
     # Find new vulnerabilities
     rep = get_reports(vulns_new, f"{webifyprefix}/{bnum}")
     if rep != []:
-        result['New vulnerabilities'] = rep
+        result["New vulnerabilities"] = rep
 
     # Render index.html
-    with open("index.html","w") as file:
-            print(template.render(title=f"{binfo['Server']} Build {binfo['Build ID']} Results", result=result, success=success), file=file)
+    with open("index.html", "w") as file:
+        print(
+            template.render(
+                title=f"{binfo['Server']} Build {binfo['Build ID']} Results",
+                result=result,
+                success=success,
+            ),
+            file=file,
+        )
 
 
 # ------------------------------------------------------------------------
