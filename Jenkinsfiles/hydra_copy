@@ -62,13 +62,15 @@ pipeline {
 
                         // Make directory and copy buildID.json there
                         sh "mkdir -p ${resultsPath}/${buildId}"
+                        
+                        // copy files
                         sh "cp ${buildId}.json ${resultsPath}/${buildId}/"
+                        sh "cp ${buildData['Provenance']['path']} ${resultsPath}/${buildId}/"
 
                         if ("${buildData['Job']}".contains("orin-agx")) {
-                            //Trigger Orin post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
@@ -82,10 +84,9 @@ pipeline {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("orin-nx")) {
-                            //Trigger Orin post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
@@ -99,10 +100,9 @@ pipeline {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("generic-x86")) {
-                            //Trigger generic-x86_64 post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
@@ -116,10 +116,9 @@ pipeline {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
                         } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug.x86_64-linux")) {
-                            //Trigger generic-x86_64 post processing pipeline
                             try {
                                 build job: "${processingJob}", parameters: [
-                                    [$class: 'StringParameterValue', name: 'image', value: "${outputPath}/nixos.img"],
+                                    [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
                                     [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
                                     [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],

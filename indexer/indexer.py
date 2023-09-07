@@ -6,7 +6,6 @@ import datetime
 import glob
 import json
 import os
-import re
 import sys
 
 import jinja2
@@ -16,10 +15,10 @@ domain = ".vedenemo.dev"
 vulnixfiles = "vulnix*.txt"
 resultfiles = "*_results/**/*.html"
 sbomfiles = "sbom.*"
-provenancefiles = "slsa_provenance*"
 vulnxsfiles = "vulns.*.csv"
 vulns_fixed = "vulns_fixed.*.csv"
 vulns_new = "vulns_new.*.csv"
+provenancefiles = "*provenance.json"
 imageprefix = ""
 webifyprefix = ""
 debug = 0
@@ -108,9 +107,9 @@ def time_stamp(tim, _):
 
 
 def postbuild_link(out, _):
-    o = out.removeprefix("/nix/store/")
+    name = out.split("/", 1)[-1]
     if imageprefix is not None:
-        return f'<A href="{imageprefix}/{o}">{out}</A>'
+        return f'<A href="{imageprefix}/{out}">{name}</A>'
     else:
         return str(out)
 
@@ -178,8 +177,7 @@ handlers = {
     "Inputs": inputs,
     "Closure size": default,
     "Output size": default,
-    "Postbuild info": default,
-    "Postbuild link": postbuild_link,
+    "Output package": postbuild_link,
 }
 
 
@@ -237,20 +235,11 @@ def main(argv: list[str]):
     imageprefix += "/" + server
     webifyprefix += "/" + server
 
-    plink = data.get("Postbuild link")
+    plink = data.get("Output package")
     if plink is None:
-        print("No postbuild link", file=sys.stderr)
-        # This will disable the image link creation
+        print("No output package", file=sys.stderr)
+        # This will disable the package link creation
         imageprefix = None
-    else:
-        if re.compile("^\/nix\/store\/[a-z0-9]{32}-.*-nixos.img$").fullmatch(plink):
-            # Remove "/nix/store/<hash>-" prefix
-            plink = plink[44:]
-            plink = plink.removesuffix("-nixos.img")
-            imageprefix += "/" + plink
-        else:
-            # This will disable the image link creation
-            imageprefix = None
 
     if debug:
         print(f"imageprefix = {imageprefix}")
@@ -277,7 +266,8 @@ def main(argv: list[str]):
                 elif isinstance(li, dict):
                     od = {}
                     for k in li:
-                        od[str(markupsafe.escape(k))] = str(markupsafe.escape(li[k]))
+                        od[str(markupsafe.escape(k))] = str(
+                            markupsafe.escape(li[k]))
                     ol.append(od)
             binfo[okey] = ol
 
@@ -311,7 +301,8 @@ def main(argv: list[str]):
             while True:
                 line = file.readline()
                 if not line:
-                    print(f"Unable to find name for report {rf}", file=sys.stderr)
+                    print(f"Unable to find name for report {rf}",
+                          file=sys.stderr)
                     sys.exit(1)
                 # It is assumed here that reports are from robot framework
                 # And this is why we dig up the name like this
@@ -341,8 +332,8 @@ def main(argv: list[str]):
     if rep != []:
         result["Vulnxscan Report"] = rep
 
-    # Find provenance files
-    rep = get_reports(provenancefiles)
+    # Find provenance file
+    rep = get_reports(provenancefiles, f"{webifyprefix}/{bnum}")
     if rep != []:
         result["SLSA Provenance"] = rep
 

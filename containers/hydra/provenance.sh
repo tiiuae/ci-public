@@ -42,11 +42,15 @@ fi
 
 # add provenance to nix store
 PROVENANCE="$(nix-store --add "$SAVE_AS")"
+/setup/upload.sh "$PROVENANCE"
 
-# sign the provenance file and upload both files to binary cache
+# create signature for the provenance file
 SIGNATURE="$(/setup/sign.sh "$PROVENANCE")"
-
-/setup/upload.sh "$PROVENANCE" "$SIGNATURE"
+if [ ! -f "$SIGNATURE" ]; then
+    echo "Signature creation failed!"
+else
+    /setup/upload.sh "$SIGNATURE"
+fi
 
 echo "PROVENANCE_FILE=\"${PROVENANCE}\""
 echo "PROVENANCE_SIGNATURE=\"${SIGNATURE}\""

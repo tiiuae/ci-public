@@ -147,9 +147,13 @@ def main():
     for key, value in os.environ.items():
         if key.startswith("HYDRA_POSTBUILD_PACKAGE_OUTPUT_PATH_"):
             index = int(key[-1])
+            signature = os.getenv(
+                f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
+            if signature is None:
+                perror("Error: No output signature", 0)
             outputs.append([
                 value,
-                os.getenv(f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
+                signature
             ])
 
     if not outputs:
@@ -191,7 +195,7 @@ def main():
     translate(binfo, combo)
 
     package = os.getenv("HYDRA_POSTBUILD_PACKAGE")
-    combo["Output package name"] = package
+    combo["Output package"] = package
 
     combo["Outputs"] = [
         {

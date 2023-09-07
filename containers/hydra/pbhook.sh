@@ -5,5 +5,6 @@
 
 # Callback script called after a package has been built
 
+/setup/upload.sh $OUT_PATHS $DRV_PATH
 SIGNATURES=$(/setup/sign.sh $OUT_PATHS $DRV_PATH)
-/setup/upload.sh $OUT_PATHS $DRV_PATH $SIGNATURES
+/setup/upload.sh $SIGNATURES
