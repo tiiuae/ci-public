@@ -33,7 +33,8 @@ sbomnix "$OUTPUT_PATH" --type=buildtime --depth=1 > /dev/null 2>&1
 /setup/provenance.py "$HYDRA_JSON" \
     --out "$SAVE_AS" \
     --sbom sbom.cdx.json \
-    --ci-version "$(cat /setup/ci-version)"
+    --ci-version "$(cat /setup/ci-version)" \
+    --hydra-url "http://localhost:3000"
 
 if [ ! -f "$PROVENANCE_FILENAME" ]; then
     echo "${PROVENANCE_FILENAME} was not generated" && exit 1

@@ -53,7 +53,7 @@ Contains every build time dependency of the image that was built.
 The `builder.id` MUST represent the entity that generated the provenance, as per
 the [SLSA Provenance](https://slsa.dev/provenance/v1#builder.id) documentation.
 
-Currently the entity that generates our provenance is script in Hydra postbuild.
+Our `builder.id` is a link to the hydra build results page.
 
 ### byProducts
 
@@ -62,10 +62,3 @@ List of extra files generated during build, excluding the main image.
 ### Metadata
 
 The `invocationId` SHOULD be set to the corresponding evaluation ID in hydra.
-
-## Version history
-
-### v1
-
-Initial version
-

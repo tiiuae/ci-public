@@ -17,11 +17,15 @@ from typing import Optional
 
 import requests
 
+CI_REPO_URL = "https://github.com/tiiuae/ci-public"
+SLSA_VERSION = "v1.0"
+SLSA_LEVEL = "L2"
+
 HYDRA_PUBLIC_URL = os.environ.get("HYDRA_URL", "http://localhost:3000").rstrip("/")
 HYDRA_NAME = os.environ.get("HYDRA_NAME", "UNKNOWN")
 
 BUILD_TYPE_PATH = (
-    "https://github.com/tiiuae/ci-public/blob/{hash}/provenance/buildtype.md"
+    "{ci_repo_url}/blob/{hash}/slsa/{slsa_version}/{slsa_level}/buildtype.md"
 )
 BUILD_ID_PATH = "{hydra_public_url}/build/{build_id}"
 
@@ -110,7 +114,7 @@ def builder_dependencies(commit_hash: str | None):
     if commit_hash:
         deps.append(
             {
-                "uri": "https://github.com/tiiuae/ci-public",
+                "uri": CI_REPO_URL,
                 "digest": {
                     "gitCommit": commit_hash,
                 },
@@ -133,7 +137,12 @@ def generate_provenance(
         "predicateType": "https://slsa.dev/provenance/v1",
         "predicate": {
             "buildDefinition": {
-                "buildType": BUILD_TYPE_PATH.format(hash=ci_version),
+                "buildType": BUILD_TYPE_PATH.format(
+                    ci_repo_url=CI_REPO_URL,
+                    hash=ci_version,
+                    slsa_version=SLSA_VERSION,
+                    slsa_level=SLSA_LEVEL,
+                ),
                 "externalParameters": {
                     "FlakeURI": flake_uri(hydra_url, build_info["build"]),
                     "target": build_info["job"],
@@ -182,8 +191,8 @@ def main():
     parser.add_argument("build_info")
     parser.add_argument("--sbom", type=argparse.FileType("r", encoding="UTF-8"))
     parser.add_argument("--out", type=argparse.FileType("w", encoding="UTF-8"))
-    parser.add_argument("--ci-version")
-    parser.add_argument("--hydra-url", default="http://localhost:3000")
+    parser.add_argument("--ci-version", default="main")
+    parser.add_argument("--hydra-url")
     args = parser.parse_args()
 
     with open(args.build_info, "rb") as file:
