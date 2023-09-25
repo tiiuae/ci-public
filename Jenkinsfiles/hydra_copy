@@ -131,6 +131,22 @@ pipeline {
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
+                        } else if ("${buildData['Job']}".contains("lenovo-x1-carbon")) {
+                            try {
+                                build job: "${processingJob}", parameters: [
+                                    [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
+                                    [$class: 'StringParameterValue', name: 'buildID', value: "${buildId}"],
+                                    [$class: 'StringParameterValue', name: 'resultsPath', value: "${resultsPath}"],
+                                    [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
+                                    [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
+                                    [$class: 'BooleanParameterValue', name: 'development', value: params.development],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
+                                    [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
+                                    [$class: 'StringParameterValue', name: 'device', value: "lenovo-x1"]
+                                ]
+                            } catch (err) {
+                                println("Something went wrong at post processing of: ${buildId} failed: ${err}")
+                            }
                         } else {
                             println("Build was not from wanted job")
                         }
