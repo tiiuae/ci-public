@@ -3,7 +3,7 @@
 
 # Container for the hydra
 
-FROM nixos/nix
+FROM nixos/nix:2.17.0
 
 RUN mkdir -p /setup/
 
