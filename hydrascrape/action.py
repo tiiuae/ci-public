@@ -210,6 +210,17 @@ def main():
         "signature": os.getenv("HYDRA_PROVENANCE_SIGNATURE")
     }
 
+    sd_image = outputs[0][0] + "/sd-image/" + \
+        outputs[0][0].split("-", 1)[-1] + ".zst"
+    nixos_img = outputs[0][0] + "/nixos.img"
+
+    if os.path.exists(sd_image):
+        combo["Image"] = sd_image
+    elif os.path.exists(nixos_img):
+        combo["Image"] = nixos_img
+    else:
+        combo["Image"] = None
+
     # Write combined info to scraped build info file
     with open(f"{bnum}.json", "w", encoding="utf-8") as json_file:
         json.dump(combo, json_file, indent=2)
