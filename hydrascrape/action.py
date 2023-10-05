@@ -21,10 +21,21 @@ def perror(txt, code=1):
     sys.exit(code)
 
 
-def nix_copy(cacheurl: str, paths: list[str], derivation: bool = False):
+def nix_copy(
+    cacheurl: str,
+    paths: list[str],
+    derivation: bool = False,
+    refresh: bool = False
+):
     """Copies stuff from cache"""
     if len(paths) < 1:
         return
+
+    if refresh:
+        refreshcmd = ["nix", "path-info", "--refresh",
+                      "--store", cacheurl]
+        refreshcmd.extend(paths)
+        subprocess.run(refreshcmd, stdout=subprocess.PIPE, check=False)
 
     nixcopy = ['nix', 'copy', '--from', cacheurl]
     if derivation:
@@ -150,7 +161,10 @@ def main():
             signature = os.getenv(
                 f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
             if signature is None:
-                perror("Error: No output signature", 0)
+                # if signing fails with "no slots" error, we can still accept the build
+                # it will get caught in signature verification
+                print("Warning: No output signature")
+                signature = ""
             outputs.append([
                 value,
                 signature
@@ -160,7 +174,8 @@ def main():
         perror("Error: Not any POSTBUILD_PACKAGE_OUTPUT defined", 0)
 
     # Copy provenance file
-    nix_copy(cacheurl, [provenance_file])
+    # refresh the narinfo to get up to date cache information
+    nix_copy(cacheurl, [provenance_file], refresh=True)
 
     with open(provenance_file, "r", encoding="utf-8") as pb_file:
         provenance = json.load(pb_file)
@@ -178,12 +193,18 @@ def main():
                ", ignoring", 0)
 
     # Copy output paths
-    nix_copy(cacheurl, sum(outputs, []))
+    for output in outputs:
+        to_copy = [output[0]]
+        # copy signature if it exists
+        if output[1] is not None:
+            to_copy.append(output[1])
+
+        nix_copy(cacheurl, to_copy, refresh=True)
 
     # Copy derivation
     drv = binfo.get('drvPath')
     if drv is not None:
-        nix_copy(cacheurl, [drv], derivation=True)
+        nix_copy(cacheurl, [drv], derivation=True, refresh=True)
 
     try:
         with open(f"{bnum}.json", "r", encoding="utf-8") as json_file:
