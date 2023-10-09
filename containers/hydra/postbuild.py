@@ -45,13 +45,15 @@ def perror(txt, code=1):
 
 
 # ------------------------------------------------------------------------
-def run_script(script: str) -> int:
+def run_script(script: str, exit_on_fail: bool = False) -> int:
     """Run given script"""
     ret = 0
     if script is not None:
         ret = os.system(script)
         if ret != 0:
             print(f"{script} failed: {ret}", file=sys.stderr)
+            if exit_on_fail:
+                sys.exit(1)
     return ret
 
 
@@ -79,6 +81,9 @@ def main():
 
     if outp is None:
         perror("Output not found")
+
+    # copy output and derivation to the cache
+    run_script(f"/setup/upload.sh {outp} {binfo['drvPath']}", exit_on_fail=True)
 
     run_script(PROVENANCE_SCRIPT)
     run_script(PACKAGE_SCRIPT)
