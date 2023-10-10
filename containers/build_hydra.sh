@@ -37,10 +37,16 @@ if [ "$HC_REMOTE_BUILDERS" != "yes" ] && [ "$HC_REMOTE_BUILDERS" != "no" ] ; the
   exit 1
 fi
 
+if [ "$HC_SUBSTITUTES" != "yes" ] && [ "$HC_SUBSTITUTES" != "no" ] ; then
+  echo "Unknown HC_SUBSTITUTES configuration value \"$HC_SUBSTITUTES\"!" >&2
+  exit 1
+fi
+
 docker build --build-arg HYDRA_UID="$HYDRA_UID" \
              --build-arg HYDRA_GID="$HYDRA_GID" \
              --build-arg CHANNEL="$HC_CHANNEL" \
              --build-arg HYDRA_REMOTE_BUILDERS="$HC_REMOTE_BUILDERS" \
+	     --build-arg HYDRA_SUBSTITUTES="$HC_SUBSTITUTES" \
              --build-arg PB_SRV="$HC_PB_SRV" \
              --build-arg HYDRA_URL="$HYDRA_URL" \
              --build-arg CI_COMMIT_HASH="$(git rev-parse HEAD)" \
