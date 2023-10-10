@@ -20,6 +20,7 @@ RUN nix-env -i hydra -i postgresql -i jq -i gnused -i python3 -i xz
 ARG HYDRA_UID
 ARG HYDRA_GID
 ARG HYDRA_REMOTE_BUILDERS
+ARG HYDRA_SUBSTITUTES
 ARG PB_SRV
 ARG HYDRA_URL
 
@@ -27,7 +28,7 @@ COPY user.sh nix_conf.sh hydra_conf.sh upload.sh pbhook.sh sign.sh /setup/
 RUN chmod +x /setup/*.sh
 RUN /setup/user.sh "$HYDRA_UID" "$HYDRA_GID" && \
     /setup/nix_conf.sh "$HYDRA_REMOTE_BUILDERS" && \
-    /setup/hydra_conf.sh "$PB_SRV" "$HYDRA_URL"
+    /setup/hydra_conf.sh "$PB_SRV" "$HYDRA_URL" "$HYDRA_SUBSTITUTES"
 
 RUN mkdir -p /run/postgresql && chmod go+w /run/postgresql
 COPY launch.sh run.sh /launch/
