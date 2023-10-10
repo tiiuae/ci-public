@@ -15,6 +15,9 @@
   echo "max_output_size = 12000000000;"
   echo "base_uri = ${2}"
   echo "using_frontend_proxy = 1"
+  if [ "${3}" = "yes" ] ; then
+    echo "use_substitutes = 1"
+  fi
 ) > /setup/hydra.conf
 
 echo "${1}" > /setup/postbuildsrv.txt

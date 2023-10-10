@@ -29,6 +29,10 @@ HYDRA_URL="http://localhost:${HC_PORT}"
 # If "yes", will use <store>/home/confs/machines file, which then must be provided
 HC_REMOTE_BUILDERS=no
 
+# If "no",  substitutes are not used
+# if "yes", allow use of substitutes
+HC_SUBSTITUTES=no
+
 # Entries to add to the container hosts file (for address resolution).
 declare -a HC_CUSTOM_HOSTS
 #HC_CUSTOM_HOSTS=("hostname1:ip1" "hostname2:ip2")
