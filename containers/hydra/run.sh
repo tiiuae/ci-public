@@ -17,7 +17,7 @@ export HYDRA_CONFIG="/setup/hydra.conf"
 export POSTBUILD_MESSAGE_SCRIPT="/setup/messager.py -m nonews -f /home/hydra/confs/slack.conf"
 export POSTBUILD_PROVENANCE_SCRIPT="/setup/provenance.sh"
 export POSTBUILD_PACKAGE_SCRIPT="/setup/compress_outputs.sh"
-hydra-server &
+hydra-server -h 0.0.0.0 &
 GC_DONT_GC="true" hydra-evaluator &
 hydra-notify &
 hydra-queue-runner
