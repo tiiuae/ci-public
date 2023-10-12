@@ -43,5 +43,7 @@ nix_conf_line "sandbox" "true"
 
 CONFFILE=$(nix-store --add nix.conf)
 
+mkdir -p /home/hydra/etc
 rm /etc/nix/nix.conf
-ln -s "$CONFFILE" /etc/nix/nix.conf
+ln -s "$CONFFILE" /home/hydra/etc/nix.conf
+ln -s "/home/hydra/etc/nix.conf" /etc/nix/nix.conf
