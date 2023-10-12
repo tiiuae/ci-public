@@ -14,7 +14,7 @@ set -e
 . "confs/hydra.default"
 
 # See README.hydra about the version
-HYDRA_STORE_VERSION="2"
+HYDRA_STORE_VERSION="3"
 
 EXTRA_FLAGS="--privileged"
 
