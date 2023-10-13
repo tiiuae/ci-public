@@ -7,6 +7,7 @@ Action script for hydra scraper
 """
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -231,11 +232,14 @@ def main():
         "signature": os.getenv("HYDRA_PROVENANCE_SIGNATURE")
     }
 
-    sd_image = outputs[0][0] + "/sd-image/" + \
-        outputs[0][0].split("-", 1)[-1] + ".zst"
+    sd_image = None
+    match = re.search(r"nix/store/[a-z0-9]{32}-(.*)\.img", outputs[0][0])
+    if match is not None:
+        sd_image = outputs[0][0] + "/sd-image/" + match.group(1) + ".img.zst"
+
     nixos_img = outputs[0][0] + "/nixos.img"
 
-    if os.path.exists(sd_image):
+    if sd_image is not None and os.path.exists(sd_image):
         combo["Image"] = sd_image
     elif os.path.exists(nixos_img):
         combo["Image"] = nixos_img
