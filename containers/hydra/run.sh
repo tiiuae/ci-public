@@ -13,7 +13,7 @@ pg_ctl start -D /home/hydra/db
 # https://github.com/NixOS/hydra/issues/1186
 export LOGNAME="hydra"
 export HYDRA_DATA="/home/hydra/db"
-export HYDRA_CONFIG="/setup/hydra.conf"
+export HYDRA_CONFIG="/home/hydra/etc/hydra.conf"
 export POSTBUILD_MESSAGE_SCRIPT="/setup/messager.py -m nonews -f /home/hydra/confs/slack.conf"
 export POSTBUILD_PROVENANCE_SCRIPT="/setup/provenance.sh"
 export POSTBUILD_PACKAGE_SCRIPT="/setup/compress_outputs.sh"
