@@ -4,6 +4,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
+""""
 # Hydra Slack messaging script
 #
 # Prints given message to configured Slack channel with major hydra build
@@ -18,90 +19,96 @@
 #
 #
 # ------------------------------------------------------------------------
-
-import os,sys,argparse
+"""
+import os
+import sys
+import argparse
 import json
 import slack
 from slack import WebClient
 from slack.errors import SlackApiError
 
 
-__version__ = u"0.73300"
-MESSAGETEXT=u""
+__version__ = "0.73300"
+MESSAGETEXT = ""
 
 
 parser = argparse.ArgumentParser(description="Send message to Slack channel (as a Slack app)",
 
 
- epilog="""
+                                 epilog="""
 
     Configuration file content: line0: slack app token, line1:slack channel to be messaged
     Keep token (and configuration file) in safe. Do not store to git.
 
     python3 messager.py  -m "TEXT FOR SLACKCHANNEL" -f CONFIGURATION FILE"""
 
-)
-parser.add_argument('-v', help='Send Slack message', action='version',version="Version:{0}   mika.nokka1@gmail.com ,  MIT licenced ".format(__version__) )
-parser.add_argument("-f",help='<Slack configuration file>',metavar="file")
-parser.add_argument("-m",help='<Slack message>',metavar="message")
+                                 )
+parser.add_argument('-v', help='Send Slack message', action='version',
+                    version=f"Version:{__version__}   mika.nokka1@gmail.com ,  MIT licenced ")
+parser.add_argument("-f", help='<Slack configuration file>', metavar="file")
+parser.add_argument("-m", help='<Slack message>', metavar="message")
 
 args = parser.parse_args()
 SLACKMESSAGE = args.m or ''
-SLACKCONFIGURATIONFILE= args.f or ''
+SLACKCONFIGURATIONFILE = args.f or ''
 
 # quick old-school way to check needed parameters
-if (SLACKMESSAGE=='' or  SLACKCONFIGURATIONFILE=='' ):
-        print("\n---> MISSING ARGUMENTS!!\n ")
-        parser.print_help()
-        sys.exit(2)
+if (SLACKMESSAGE == '' or SLACKCONFIGURATIONFILE == ''):
+    print("\n---> MISSING ARGUMENTS!!\n ")
+    parser.print_help()
+    sys.exit(2)
 
 file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
-if (file_exists):
+if file_exists:
 
-        SLACKMESSAGE="" # forming first message part here, not using passed argument
+    SLACKMESSAGE = ""  # forming first message part here, not using passed argument
 
-        print ("Slack configuration file exists. Going to do the messaging",file=sys.stderr)
-        file = open(SLACKCONFIGURATIONFILE, "r")
-        config_array=file.read().split()
-        slackchannel=str(config_array[1])
-        slacktoken=str(config_array[0])
+    print("Slack configuration file exists. Going to do the messaging", file=sys.stderr)
+    file = open(SLACKCONFIGURATIONFILE, "r", encoding="utf-8")
+    config_array = file.read().split()
+    slackchannel = str(config_array[1])
+    slacktoken = str(config_array[0])
 
-        hydraserver = os.getenv("POSTBUILD_SERVER")
-        if hydraserver == None:
-            print ("No Hydra server defined",file=sys.stderr)
-            HYDRASERVER=""
-        else:
-            HYDRASERVER="\nHydra server:"+hydraserver
+    hydraserver = os.getenv("POSTBUILD_SERVER")
+    if hydraserver is None:
+        print("No Hydra server defined", file=sys.stderr)
+        HYDRASERVER = ""
+    else:
+        HYDRASERVER = "\nHydra server:"+hydraserver
 
-        hydradata= os.getenv("HYDRA_JSON")
-        if hydradata == None:
-            print ("No Hydra JSON defined",file=sys.stderr)
-        else:
-            with open(hydradata) as jsonf:
-                binfo = json.load(jsonf)
-                #prettyinfo=json.dumps(binfo,indent=3)
-                buildjob=str(binfo['job'])
-                buildstatus=str(binfo['buildStatus'])
-                buildnumber=str(binfo['build'])
-                buildproject=str(binfo['project'])
+    hydradata = os.getenv("HYDRA_JSON")
+    if hydradata is None:
+        print("No Hydra JSON defined", file=sys.stderr)
+    else:
+        with open(hydradata) as jsonf:
+            binfo = json.load(jsonf)
+            # prettyinfo=json.dumps(binfo,indent=3)
+            buildjob = str(binfo['job'])
+            buildstatus = str(binfo['buildStatus'])
+            buildnumber = str(binfo['build'])
+            buildproject = str(binfo['project'])
 
-                if (int(buildstatus)==0):
+            if (int(buildstatus)==0):
                     SLACKMESSAGE="OK Build !!!"
 
-                else:
-                    SLACKMESSAGE="Broken Build !!!"
+            else:
+                SLACKMESSAGE="Broken Build !!!"
 
-                SLACKMESSAGE=SLACKMESSAGE+HYDRASERVER+"\nHydra build:"+str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:"+buildnumber+"\nProject:"+buildproject
 
-        try:
-            client = slack.WebClient(token=slacktoken)
-            client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
+            SLACKMESSAGE = SLACKMESSAGE+HYDRASERVER+"\nHydra build:" + \
+                str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:" + \
+                buildnumber+"\nProject:"+buildproject
 
-        except Exception as e:
-            print(("Slacking failed! Check your channel name?, error: %s" % e))
-            sys.exit(1)
+    try:
+        client = slack.WebClient(token=slacktoken)
+        client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
+
+    except Exception as e:
+        print(f"Slacking failed! Check your channel name?, error: {e}")
+        sys.exit(1)
 
 
 else:
-        print ("No Slack configuration file found. Doing nothing",file=sys.stderr)
+    print("No Slack configuration file found. Doing nothing", file=sys.stderr)
