@@ -7,6 +7,8 @@
 
 # We have no sed to easily use template
 
+mkdir -p /home/hydra/etc
+
 (
   echo "<runcommand>"
   echo "  job = *:*:*"
@@ -18,6 +20,6 @@
   if [ "${3}" = "yes" ] ; then
     echo "use_substitutes = 1"
   fi
-) > /setup/hydra.conf
+) > /home/hydra/etc/hydra.conf
 
 echo "${1}" > /setup/postbuildsrv.txt
