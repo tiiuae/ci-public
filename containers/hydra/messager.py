@@ -90,12 +90,24 @@ if file_exists:
             buildnumber = str(binfo['build'])
             buildproject = str(binfo['project'])
 
-            if (int(buildstatus)==0):
-                    SLACKMESSAGE="OK Build !!!"
+            message_dict = {
+                None: "False build! Did not finish, maybe evaluation failed ??",
+                0: "OK build !!!",
+                1: "Failed build, no other information !!!",
+                2: "Dependency failed build !!!",
+                3: "Aborted build !!!",
+                4: "Cancelled by the user build !!!",
+                5: "Failed build by undefined reason !!!",
+                6: "Failed with output build !!!",
+                7: "Timed out build !!!",
+                8: "Failed build by undefined reason !!!",
+                9: "Aborted build !!!",
+                10: "Log size limit exceed failure build !!!",
+                11: "Output size limit exceed build !!!"
+            }
 
-            else:
-                SLACKMESSAGE="Broken Build !!!"
-
+            SLACKMESSAGE = message_dict.get(int(
+                buildstatus),  "Broken build for some undefined reason, maybe future error message ???")
 
             SLACKMESSAGE = SLACKMESSAGE+HYDRASERVER+"\nHydra build:" + \
                 str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:" + \
