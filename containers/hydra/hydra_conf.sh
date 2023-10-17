@@ -14,7 +14,7 @@ mkdir -p /home/hydra/etc
   echo "  job = *:*:*"
   echo "  command = POSTBUILD_SERVER=${1} python3 /setup/postbuild.py"
   echo "</runcommand>"
-  echo "max_output_size = 12000000000;"
+  echo "max_output_size = 14000000000;"
   echo "base_uri = ${2}"
   echo "using_frontend_proxy = 1"
   if [ "${3}" = "yes" ] ; then
