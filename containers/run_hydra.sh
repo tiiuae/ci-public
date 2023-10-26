@@ -209,7 +209,10 @@ if [ ${#HC_KNOWN_HOSTS[@]} -ne 0 ] && [ ! -f "$KNOWN_HOSTS" ]; then
         h_name="${host%%:*}"
         h_port="${host##*:}"
         echo "Scanning host key for ${h_name}:${h_port}"
-        ssh-keyscan -H -p "$h_port" "$h_name" >> "$KNOWN_HOSTS" 2>/dev/null
+        if ! ssh-keyscan -H -p "$h_port" "$h_name" >> "$KNOWN_HOSTS" 2>/dev/null ; then
+            echo "Setting up known_hosts failed!" >&2
+            exit 1
+        fi
     done
 fi
 
