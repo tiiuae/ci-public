@@ -20,7 +20,7 @@ Keeps internal records for build PRs and rebuild changed PRs (building means com
 <br>
 1) Setup Ghaf Hydra docker based build system 
 <br>
-2) Set needed Hydra and PR tool env variables (see example setenvs.sh and tool code for explanations)
+2) Set needed Hydra and PR tool env variables (see example setenv.sh and tool code for explanations)
 <br>
 3) Create tokenfile to include your access token to repo for PR detections
 <br>
@@ -31,7 +31,7 @@ Editing "build" information files, one can manipulate which PR number is thought
 (set via env variables)
 <br>
 
-## CONFIGURATIONS (see example setens.sh)
+## CONFIGURATIONS (see example setenv.sh)
 <br>
 HYDRACTL_USERNAME="hydra" ---> Hydra admin account
 <br>
