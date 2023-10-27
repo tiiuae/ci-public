@@ -33,7 +33,7 @@ Editing "build" information files, one can manipulate which PR number is thought
 
 ## CONFIGURATIONS (see example setenv.sh)
 <br>
-HYDRACTL_USERNAME="hydra" ---> Hydra admin account
+HYDRACTL_USERNAME="automation" ---> Hydra automation account
 <br>
 TOKENFILE="tokenfile" ---> token to access Github repo for these PR observations
 <br>
@@ -52,9 +52,9 @@ EXT_PORT=3030 ---> Hybdra port dedicated for the build server (docker will expos
 RUNDELAY=30 ---> minutes to wait before next execution of this script (in service mode)
 
 <br>
-Set admin password manually in order not to accidentically commiting it to public repo
+Set hydra automation password manually in order not to accidentically commiting it to public repo
 <br>
-export HYDRACTL_PASSWORD ="YOURSECRETPASSWORD"  
+export HYDRACTL_PASSWORD ="YOURSECRETPASSWORD"
 
 
 ## Commandline
