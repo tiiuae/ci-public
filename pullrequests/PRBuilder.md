@@ -18,7 +18,7 @@ Keeps internal records for build PRs and rebuild changed PRs (building means com
 
 ## USAGE
 <br>
-1) Setup Ghaf Hydra docker based build system 
+1) Setup Ghaf Hydra docker based build system
 <br>
 2) Set needed Hydra and PR tool env variables (see example setenv.sh and tool code for explanations)
 <br>
@@ -37,7 +37,7 @@ HYDRACTL_USERNAME="automation" ---> Hydra automation account
 <br>
 TOKENFILE="tokenfile" ---> token to access Github repo for these PR observations
 <br>
-TESTREPO="tiiuae/ghaf" ---> Ghaf repo under PR observations 
+TESTREPO="tiiuae/ghaf" ---> Ghaf repo under PR observations
 <br>
 ORGANIZATION="tiiuae" ---> required Github organization membership before building PR proceeds
 <br>
