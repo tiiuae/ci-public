@@ -22,7 +22,7 @@ Keeps internal records for build PRs and rebuild changed PRs (building means com
 <br>
 2) Set needed Hydra and PR tool env variables (see example setenv.sh and tool code for explanations)
 <br>
-3) Create tokenfile to include your access token to repo for PR detections
+3) (Optional) Create tokenfile to include your access token to repo for PR detections
 <br>
 4) Start (one off run) poller execution: python3 PollPr.py (use docker host , tools repo checkout in the host)
 <br>
@@ -35,7 +35,7 @@ Editing "build" information files, one can manipulate which PR number is thought
 <br>
 HYDRACTL_USERNAME="automation" ---> Hydra automation account
 <br>
-TOKENFILE="tokenfile" ---> token to access Github repo for these PR observations
+TOKENFILE="tokenfile" ---> token to access Github repo for these PR observations. If not present, anonymous access will be used
 <br>
 TESTREPO="tiiuae/ghaf" ---> Ghaf repo under PR observations
 <br>
