@@ -6,8 +6,7 @@ cd ../containers && . confs/hydra.default
 cd "${PRDIR}"
 
 export HYDRACTL_USERNAME="automation"
-#HYDRACTL_PASSWORD for HYDRACTL_USERNAME needs to be setup also, do not use this file in order not to accidentally saving to public repo
-# TODO: Get the password automatically from hydra configuration.
+export HYDRACTL_PASSWORD="${PW_AUTO}"
 export TOKENFILE="./tokenfile"
 export TESTREPO="tiiuae/ghaf"
 export ORGANIZATION="tiiuae"
