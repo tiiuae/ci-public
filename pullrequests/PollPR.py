@@ -444,11 +444,7 @@ def Finder():
         githubtoken = str(config_array[0])
     else:
         print(f"No Github tokenfile found, check:{TOKENFILE}")
-        sys.exit(5)
-
-    if githubtoken is None:
-        print(f"No Github token defined, check:{TOKENFILE}", file=sys.stderr)
-        sys.exit(5)
+        githubtoken = None
 
     g = Github(githubtoken)
     repo = g.get_repo(TESTREPO)
