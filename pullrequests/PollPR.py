@@ -215,7 +215,7 @@ def CheckChangedPR(pr, repo, counter):
 
 #########################################################################################
 # pylint: disable=too-many-arguments
-def PRBuilding(data, ErroCounter, g, counter, myfile, tbd_list, timetoken):
+def PRBuilding(data, ErroCounter, g, org, counter, myfile, tbd_list, timetoken):
     """
     If PR creator is in defined Github membership, initate Hydra build definition actions
     """
@@ -251,7 +251,6 @@ def PRBuilding(data, ErroCounter, g, counter, myfile, tbd_list, timetoken):
         ErroCounter = ErroCounter+1
 
     USER = data["user"]["login"]
-    org = g.get_organization(ORGANIZATION)
     user = g.get_user(USER)
 
     if (org.has_in_members(user)):
@@ -448,6 +447,7 @@ def Finder():
 
     g = Github(githubtoken)
     repo = g.get_repo(TESTREPO)
+    org = g.get_organization(ORGANIZATION)
     pulls = repo.get_pulls(state='open', sort='created', base='main')
 
     ##########################################################################
@@ -568,7 +568,7 @@ def Finder():
                         print(
                             f"==> CHECKING ---> SOURCE PR BRANCH:{data['head']['ref']}")
 
-                        PRBuilding(data, ErroCounter, g, counter,
+                        PRBuilding(data, ErroCounter, g, org, counter,
                                    myfile, tbd_list, changeTimeCleaned)
                     else:
                         print("")
@@ -589,7 +589,7 @@ def Finder():
                     print("not adding")
 
                 timetoken = ""
-                PRBuilding(data, ErroCounter, g, counter,
+                PRBuilding(data, ErroCounter, g, org, counter,
                            myfile, tbd_list, timetoken)
                 break
 
