@@ -644,7 +644,7 @@ def main(argv):
 
 
         epilog='''
-    "Needs some env variables, see code for comments and setenvs.sh as an example setter"
+    "Needs some env variables, see code for comments and setenv.sh as an example setter"
     ''')
 
     parser.add_argument('-v', help='Check Github open PRs and activate Ghaf Hydra build',
