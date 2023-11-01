@@ -16,6 +16,21 @@ Keeps internal records for build PRs and rebuild changed PRs (building means com
 <br>
 <br>
 
+## Needed python modules
+
+- requests
+- schedule
+- (py)github
+- aiohttp
+
+E.g. to install to ubuntu system from debian packages:
+> sudo apt install python3-schedule python3-github python3-aiohttp
+
+E.g. to setup NixOS /etc/nixos/configuration.nix:
+environment.systemPackages = with pkgs; [
+  (python310.withPackages(ps: with ps; [ requests schedule pygithub aiohttp ]))
+];
+
 ## USAGE
 <br>
 1) Setup Ghaf Hydra docker based build system
