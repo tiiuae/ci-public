@@ -19,7 +19,7 @@ function Calc_sha256sum {
 }
 
 if [ "$1" == "--check-script" ]; then
-    # (Note that official nix path never be --check-script)
+    # (Note that official nix path_to_check will never be --check-script)
     # This just to check for errors on development environment that has shellcheck and bashate installed
     if shellcheck --help > /dev/null 2>&1 && bashate --help > /dev/null 2>&1; then
         if shellcheck "$0" && bashate -i E006 "$0"; then
@@ -53,10 +53,18 @@ COPY="nix copy --from https://cache.vedenemo.dev"
 [[ ! -e "$path_to_check" ]] && $COPY "$path_to_check"
 [[ ! -f "$signature_file" ]] && $COPY "$signature_file"
 
+
 # get the sha256 of the file being verified
 PATH_HASH="$(Calc_sha256sum "$path_to_check")"
 
-# verify the file using given signature_file
-# start.sh verify returns zero if signature_file is valid.
-# Error code 10 for invalid signature_file, other codes signal that something else went wrong
-scs-pki-research/yubikey/start.sh verify "-h=$PATH_HASH" "-s=$(<"$signature_file")"
+# store hash to a file
+echo "$PATH_HASH" > digest.hex
+
+# convert the hashfile into binary format
+xxd -r -p digest.hex digest.bin
+
+# convert signature file to signature.bin file
+openssl enc -base64 -d -in "$signature_file" -out signature.bin
+
+# validate the authenticity of the signature
+openssl dgst -sha256 -verify ganymede.pem -signature signature.bin digest.bin

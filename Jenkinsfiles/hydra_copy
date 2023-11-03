@@ -62,7 +62,7 @@ pipeline {
 
                         // Make directory and copy buildID.json there
                         sh "mkdir -p ${resultsPath}/${buildId}"
-                        
+
                         // copy files
                         sh "cp ${buildId}.json ${resultsPath}/${buildId}/"
                         sh "cp ${buildData['Provenance']['path']} ${resultsPath}/${buildId}/"
@@ -78,7 +78,8 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "orin-agx"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "orin-agx"],
+                                    [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
                                 ]
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
@@ -92,9 +93,10 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
-                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "orin-nx"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "orin-nx"],
+                                    [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
                                 ]
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
@@ -110,7 +112,8 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "nuc"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "nuc"],
+                                    [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
                                 ]
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
@@ -126,7 +129,8 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "risc-v"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "risc-v"],
+                                    [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
                                 ]
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
@@ -142,7 +146,8 @@ pipeline {
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
                                     [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
-                                    [$class: 'StringParameterValue', name: 'device', value: "lenovo-x1"]
+                                    [$class: 'StringParameterValue', name: 'device', value: "lenovo-x1"],
+                                    [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
                                 ]
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")

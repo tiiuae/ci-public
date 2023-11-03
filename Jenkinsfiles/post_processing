@@ -9,6 +9,7 @@ provenanceJob = ''
 testJob = ''
 level = ''
 deviceName = ''
+sigVerfJob = ''
 
 pipeline {
     agent {label "${params.label}"}
@@ -23,9 +24,59 @@ pipeline {
                     provenanceJob = "${splitted[0]}/Supply_chain_security/provenance"
                     level = "${splitted[0]}"
                     testJob = "${splitted[0]}/Testing/hw_test_set"
+                    sigVerfJob = "${splitted[0]}/Supply_chain_security/signature_verification"
                     currentBuild.description = "${params.server} ${params.device} BuildID: ${params.buildID}"
                 }
              }
+        }
+        stage('Output signature verification') {
+            steps {
+                script {
+                    def splitted = "${JOB_NAME}".split('/')
+                    def buildData = readJSON file: "/home/${params.label}/Jenkins-agent/workspace/${splitted[0]}/hydra_copy/${params.buildID}.json"
+                    def signature_file = "${buildData['Outputs'][0]['signature']}"
+                    build = build(
+                        job: "${sigVerfJob}", propagate: false,
+                        parameters: [
+                            [$class: 'StringParameterValue', name: 'path_to_check', value: "${params.outputPath}"],
+                            [$class: 'StringParameterValue', name: 'signature_file', value: "${signature_file}"],
+                            [$class: 'StringParameterValue', name: 'pem_file', value: "${params.server}.pem"]
+                        ]
+                    )
+                    if(build.result == "SUCCESS") {
+                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                    } else {
+                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                            error("Signature verification build failed")
+                        }
+                    }
+                }
+            }
+        }
+        stage('Provenance signature verification') {
+            steps {
+                script {
+                    def splitted = "${JOB_NAME}".split('/')
+                    def buildData = readJSON file: "/home/${params.label}/Jenkins-agent/workspace/${splitted[0]}/hydra_copy/${params.buildID}.json"
+                    def provenancePath = "${buildData['Provenance']['path']}"
+                    def signature_file = "${buildData['Provenance']['signature']}"
+                    build = build(
+                        job: "${sigVerfJob}", propagate: false,
+                        parameters: [
+                            [$class: 'StringParameterValue', name: 'path_to_check', value: "${provenancePath}"],
+                            [$class: 'StringParameterValue', name: 'signature_file', value: "${signature_file}"],
+                            [$class: 'StringParameterValue', name: 'pem_file', value: "${params.server}.pem"]
+                        ]
+                    )
+                    if(build.result == "SUCCESS") {
+                        echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                    } else {
+                        catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
+                            error("Signature verification build failed")
+                        }
+                    }
+                }
+            }
         }
         stage('vulnix') {
             steps {
