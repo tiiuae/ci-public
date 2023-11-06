@@ -36,7 +36,7 @@ pipeline {
                     def buildData = readJSON file: "/home/${params.label}/Jenkins-agent/workspace/${splitted[0]}/hydra_copy/${params.buildID}.json"
                     def signature_file = "${buildData['Outputs'][0]['signature']}"
                     build = build(
-                        job: "${sigVerfJob}", propagate: false,
+                        job: "${sigVerfJob}",
                         parameters: [
                             [$class: 'StringParameterValue', name: 'path_to_check', value: "${params.outputPath}"],
                             [$class: 'StringParameterValue', name: 'signature_file', value: "${signature_file}"],
@@ -47,7 +47,7 @@ pipeline {
                         echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
                         catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
-                            error("Signature verification build failed")
+                            error("Signature verification failed!!!")
                         }
                     }
                 }
@@ -61,7 +61,7 @@ pipeline {
                     def provenancePath = "${buildData['Provenance']['path']}"
                     def signature_file = "${buildData['Provenance']['signature']}"
                     build = build(
-                        job: "${sigVerfJob}", propagate: false,
+                        job: "${sigVerfJob}",
                         parameters: [
                             [$class: 'StringParameterValue', name: 'path_to_check', value: "${provenancePath}"],
                             [$class: 'StringParameterValue', name: 'signature_file', value: "${signature_file}"],
@@ -72,7 +72,7 @@ pipeline {
                         echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
                     } else {
                         catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
-                            error("Signature verification build failed")
+                            error("Signature verification failed!!!")
                         }
                     }
                 }
