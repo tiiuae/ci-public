@@ -17,8 +17,8 @@ if [ "$HC_NONINTERACTIVE" != "on" ] ; then
 fi
 
 # Stop and clear out old container if needed
-docker stop "${HC_BASE_LABEL}-cnt" || /bin/true
-docker container rm "${HC_BASE_LABEL}-cnt" || /bin/true
+docker stop "${HC_BASE_LABEL}-cnt" 2>/dev/null || /bin/true
+docker container rm "${HC_BASE_LABEL}-cnt" 2>/dev/null || /bin/true
 
 if [ -n "$HC_STORE_PATH" ] && [ -d "$HC_STORE_PATH" ] ; then
   chmod -R u+w "$HC_STORE_PATH"
