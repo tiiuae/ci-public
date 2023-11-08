@@ -55,6 +55,12 @@ HC_NONINTERACTIVE="off"
 #HC_KNOWN_HOSTS=("server1.dom:22" "231.231.231.231:2222")
 
 if [ -f confs/hydra.local ] ; then
+  PERMS="$(stat -c %a confs/hydra.local)"
+
+  if [ "${PERMS}" != "600" ] && [ "${PERMS}" != "400" ] ; then
+    echo "Bad permissions for hydra.local. Only user should be able to read it." >&2
+    exit 1
+  fi
   # Possible overrides
   . confs/hydra.local
 fi
