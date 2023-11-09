@@ -25,4 +25,7 @@ if [ -r  "$BINCACHECONF" ]; then
         echo "${CACHE_SSH_KEY_FILE} is nonexisting or unreadable" >&2
         exit 1
     fi
+else
+    # Disabled upload is not an error
+    exit 0
 fi
