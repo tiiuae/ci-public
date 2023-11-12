@@ -93,7 +93,7 @@ def sha256sum(path, buf_size, hashonly=False) -> str | None:
         return None
 
     if hashonly:
-        res = hsh.hexdigest() + "\n"
+        res = hsh.hexdigest()
     else:
         res = hsh.hexdigest() + f" {ptype} " + os.path.basename(path) + "\n"
 
