@@ -1,11 +1,14 @@
 #!/bin/bash
+# shellcheck disable=SC2154
 
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 # -------------------------------------------------------------------------
 # this script assumes that sha256tree.py is copied from ci-public repo
-# to this working directory and that needed <hydra>.pem file is there also
+# to this working directory and that needed <hydra>.pem file is there also.
+# $pem_file is Jenkins parameter and this script is used as it is on Jenkins job
+# warning about that is ignored in second line
 # -------------------------------------------------------------------------
 
 # Calculate sha256 for a file or a directory
@@ -64,11 +67,12 @@ COPY="nix copy --from https://cache.vedenemo.dev"
 # get the sha256 of the file being verified
 PATH_HASH="$(Calc_sha256sum "$path_to_check")"
 
- # Check for valid input as xxd -r will silently ignore errors
+# Check for valid input as xxd -r will silently ignore errors
 if [[ ! $PATH_HASH =~ ^[0-9A-Fa-f]{64}$ ]]; then
     echo "${PATH_HASH}: Hash calculation failed" >&2
     exit 1
 fi
+
 # Make temp directory and copy <hydra>.pem file there
 MYTEMP=$(mktemp -d)
 cp "$pem_file" /"$MYTEMP"
@@ -85,7 +89,7 @@ openssl enc -base64 -d -in "$signature_file" -out signature.bin
 
 # validate the authenticity of the signature
 if ! openssl dgst -sha256 -verify "$pem_file" -signature signature.bin digest.bin > /dev/null 2>&1; then
-	echo "Signature check failed" >&2
+	  echo "Signature check failed" >&2
     exit 1
 else
     echo "Signature check ok" >&2
