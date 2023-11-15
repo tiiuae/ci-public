@@ -6,12 +6,24 @@
 # These gnu.org packages are needed to build the tools that would
 # make downloading from gnu.org possible, at least by the method
 # that nixpkgs recipes for them use.
-/nix/store/349f140sh7m12vy9mp1wkp58axyp06c9-which-2.21.tar.gz
-/nix/store/7abps0dar1gd6ljcmlic31q0517hfapp-libidn2-2.3.2.tar.gz
-/nix/store/ck70x6hdl1kgqa4a9ps8spw6ph9mfcj8-libtool-2.4.7.tar.gz
-/nix/store/s1bb06rzbxlvq08sg0ymwdgcgd1a7xh3-gettext-0.21.tar.gz
-/nix/store/9vm1ihdg1ysmrjdbb80g834iizzxb4yk-bison-3.8.2.tar.gz
-/nix/store/0xiwj5b1vsxpzvqw2y16x86ya4k2f36p-ncurses-6.3-20220507.tgz
+/nix/store/f45dpx8vxhfckg2mbbns9dy1l82i74jz-coreutils-9.1.tar.xz
+/nix/store/g3pzpdicszf700d5xffyk939jzxa4r2k-autoconf-2.71.tar.xz
+/nix/store/y954pl28vm03qfhvqrgyspwwv28b5lyi-findutils-4.9.0.tar.xz
+/nix/store/a73wzcks7h2y814qxa1z3kv1hg205mpm-bash52-001
+/nix/store/xc3h9isl5566i6a4pvdsgin26rchijrq-bash52-002
+/nix/store/sxc8xmi7caxaiywzh15za9crpk3bw98z-bash52-003
+/nix/store/2ynclzrdl0hy9miy6k8gcwgzw4mhsmd0-bash52-004
+/nix/store/z76vsdh69cvwkwhwg69k7d1znwjmx6hf-bash52-005
+/nix/store/1fw5fcsjz9wcbf13a5xs4i2cjfircp3x-bash52-006
+/nix/store/rs1qdpy1nb3x07g4vqvb4s774qhq9f0w-bash52-007
+/nix/store/jn9f2mr2jdm9yn5hi0pws44nbfrah8d3-bash52-008
+/nix/store/j8vipdfzslz4aa7aj0amwd4msxa9hhpl-bash52-009
+/nix/store/24ygbbc9k6vjc4vhz2j6a9dkdgmqgc6n-bash52-010
+/nix/store/sim601rd1y3hsap9qkn25cwprsa9aipp-bash52-011
+/nix/store/x1sqwqn02c5mnpi8hbqlxpbm3rahq5dm-bash52-012
+/nix/store/wcpqrbsljh2x04qccs6jv9z8c9y1c3cd-bash52-013
+/nix/store/cddj9qpc4l62qjy6vvf7gp50mfqaf506-bash52-014
+/nix/store/pjp935kxwai47zyx1wpwadls00m9nmib-bash52-015
 
 # Other files failing to download on from-scratch build
 /nix/store/byib83r321c1fjgdk37kai1q1zxncra7-sys-cdefs.h
