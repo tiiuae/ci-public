@@ -22,6 +22,7 @@ CI/CD related files
 | Jenkisfiles | Jenkins post processing scripts
 | LICENSES | Licenses used in this repository
 | yubihsm | Yubihsm container stuff
+| sha256tree | [Checksum calculator for directory trees](./sha256tree/sha256tree.md)
 
 ## Git commit hook
 
