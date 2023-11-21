@@ -187,8 +187,7 @@ pipeline {
                             def webserver = (params.development) ? "test.vedenemo.dev" : "vedenemo.dev"
                             def sftp_user = (params.development) ? "test_sftp" : "sftp_user"
                             def trigger_user = (params.development) ? "test_trigger" : "script_trigger"
-                            sh "scp -s -i ~/.ssh/sftpid_ed25519 -r ${params.buildID} ${sftp_user}@${webserver}:/upload/build_reports/${params.server}/${params.buildID}"
-                            sh "ssh -i ~/.ssh/trigid_ed25519 ${trigger_user}@${webserver} -- --index build_reports/${params.server}/${params.buildID}"
+                            sh  "~/Jenkins-agent/workspace/${level}/post_processing/Jenkinsfiles/upload_dir_creation.sh ${params.server} ~/.ssh/sftpid_ed25519 22 ${sftp_user} ${webserver} ${params.buildID} ${trigger_user} ~/.ssh/trigid_ed25519"
                         }
                     }
                 }
