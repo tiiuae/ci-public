@@ -39,7 +39,7 @@ pipeline {
             }
             steps {
                 script {
-                    sh "python3 hydrascrape/hydrascrape.py ${params.server}.vedenemo.dev ${params.project} ${params.jobset} handled_builds "+ '\'python3 hydrascrape/action.py\''
+                    sh "python3 hydrascrape/hydrascrape.py ${params.server}.vedenemo.dev ${params.project} ${params.jobset} handled_builds_${params.server} "+ '\'python3 hydrascrape/action.py\''
                 }
             }
         }
