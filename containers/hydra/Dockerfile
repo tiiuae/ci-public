@@ -43,9 +43,12 @@ RUN /setup/install-sbomnix.sh
 
 # copy all other setup scripts that will be used later
 COPY postgres.sh hydra.sh populate.sh packages.lst postbuild.py cachecopy.sh \
-    schedule.sh messager.py provenance.sh provenance.py sha256tree.py \
+    schedule.sh messager.py provenance.sh provenance.py \
     compress_outputs.sh webupload.sh \
     /setup/
+
+# Fetch sha256tree.py from repo
+RUN wget -O /setup/sha256tree.py https://raw.githubusercontent.com/tiiuae/ci-public/4c8d84fff191361c303605b2fa7a64961cba82c8/sha256tree/sha256tree.py
 
 # make sure everything is executable
 RUN chmod +x /setup/*.sh
