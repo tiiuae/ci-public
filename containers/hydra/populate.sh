@@ -11,7 +11,8 @@
 cat /setup/packages.lst |
     ( while read PACKAGE DISCARD_REST
       do
-	if [ "$PACKAGE" != "" ] && [ "$PACKAGE" != "#" ] ; then
+        if [ "$PACKAGE" != "" ] &&
+           [ "$PACKAGE" != "#" ] && [ "$PACKAGE" != "##" ] ; then
           nix-env -i "$PACKAGE"
-	fi
+        fi
       done )
