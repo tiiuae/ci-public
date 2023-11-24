@@ -4,28 +4,41 @@
 {
   description = "Flakes file for csvdiff";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Allows structuring the flake with the NixOS module system
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+    # flake-parts module for finding the project root directory
+    flake-root.url = "github:srid/flake-root";
+    # Format all the things
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # For preserving compatibility with non-Flake users
+    flake-compat = {
+      url = "github:nix-community/flake-compat";
+      flake = false;
+    };
+  };
 
-  outputs = { self, nixpkgs }:
-    let
-      pkgs = import nixpkgs { system = "x86_64-linux"; };
-      csvdiff = import ./default.nix { pkgs = pkgs; };
-      csvdiff-shell = import ./shell.nix { pkgs = pkgs; };
-    in rec {
-      
-      # nix package
-      packages.x86_64-linux = {
-        inherit csvdiff;
-        default = csvdiff;
-      };
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake
+    {
+      inherit inputs;
+    } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
 
-      # nix run .#csvdiff
-      apps.x86_64-linux.csvdiff = {
-        type = "app";
-        program = "${self.packages.x86_64-linux.csvdiff}/bin/csvdiff";
-      };
-
-      # nix develop
-      devShells.x86_64-linux.default = csvdiff-shell;
+      imports = [
+        ./nix
+      ];
     };
 }

@@ -1,21 +1,23 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-FileCopyrightText: 2020-2023 Eelco Dolstra and the flake-compat contributors
 #
-# SPDX-License-Identifier: Apache-2.0
-{
-  pkgs ? import <nixpkgs> {},
-  pythonPackages ? pkgs.python3Packages,
-}:
+# SPDX-License-Identifier: MIT
+# This file originates from:
+# https://github.com/nix-community/flake-compat
+# This file provides backward compatibility to nix < 2.4 clients
+{system ? builtins.currentSystem}: let
+  lock = builtins.fromJSON (builtins.readFile ./flake.lock);
 
-pythonPackages.buildPythonPackage rec {
-  pname = "csvdiff";
-  version = pkgs.lib.removeSuffix "\n" (builtins.readFile ./VERSION);
-  format = "setuptools";
+  inherit (lock.nodes.flake-compat.locked) owner repo rev narHash;
 
-  src = ./.;
+  flake-compat = fetchTarball {
+    url = "https://github.com/${owner}/${repo}/archive/${rev}.tar.gz";
+    sha256 = narHash;
+  };
 
-  propagatedBuildInputs = [ 
-    pythonPackages.pandas
-    pythonPackages.colorlog
-    pythonPackages.wheel
-  ];
-}
+  flake = import flake-compat {
+    inherit system;
+    src = ./.;
+  };
+in
+  flake.defaultNix
