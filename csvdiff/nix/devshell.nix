@@ -11,14 +11,11 @@
         (
           pkgs.python3.withPackages (ps:
             with ps; [
-              black
               colorlog
               deploykit
               invoke
               numpy
               pandas
-              pycodestyle
-              pylint
               pytest
               tabulate
             ])
