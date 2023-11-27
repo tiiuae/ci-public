@@ -16,12 +16,6 @@ elif [ "$SETUP_RUN" = "2" ] ; then
   /setup/postgres.sh
   /setup/hydra.sh
   /setup/populate.sh
-elif [ "$SETUP_RUN" = "ext" ] ; then
-  if ! [ -f /etc/container-debug-true ] ; then
-    echo "This is not a debug version of the container" >&2
-    exit 1
-  fi
-  /nix/var/nix/external_script
 else
   # On later runs, outside store has been mounted over internal store.
   # Run as 'hydra'
