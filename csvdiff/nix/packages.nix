@@ -12,7 +12,7 @@ _: {
     packages = rec {
       default = csvdiff;
 
-      csvdiff = pp.buildPythonPackage rec {
+      csvdiff = pp.buildPythonPackage {
         pname = "csvdiff";
         version = pkgs.lib.removeSuffix "\n" (builtins.readFile ../VERSION);
         format = "setuptools";
