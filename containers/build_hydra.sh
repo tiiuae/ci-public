@@ -8,7 +8,7 @@
 . confs/hydra.default
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
-  echo "Usage: $0 [uid] [gid] [debug=true/false]"
+  echo "Usage: $0 [uid] [gid]"
   exit
 fi
 
@@ -21,15 +21,6 @@ if [ "$2" != "" ] ; then
   HYDRA_GID="$2"
 else
   HYDRA_GID="$(id -g)"
-fi
-
-if [ "$3" = "true" ] ; then
-  CONTAINER_DEBUG="--build-arg CONTAINER_DEBUG=true"
-elif [ "$3" = "" ] || [ "$3" = "false" ] ; then
-  CONTAINER_DEBUG=""
-else
-  echo "Unknown debug value \"$3\"!" >&2
-  exit 1
 fi
 
 if [ "$HC_REMOTE_BUILDERS" != "yes" ] && [ "$HC_REMOTE_BUILDERS" != "no" ] ; then
@@ -50,4 +41,4 @@ docker build --build-arg HYDRA_UID="$HYDRA_UID" \
              --build-arg PB_SRV="$HC_PB_SRV" \
              --build-arg HYDRA_URL="$HYDRA_URL" \
              --build-arg CI_COMMIT_HASH="$(git rev-parse HEAD)" \
-             -t "$HC_BASE_LABEL" hydra $CONTAINER_DEBUG -f hydra/Dockerfile
+             -t "$HC_BASE_LABEL" hydra -f hydra/Dockerfile

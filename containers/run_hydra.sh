@@ -31,7 +31,7 @@ check-script)
     exit 0
 ;;
 -h|--help)
-    echo "Usage: $0 [store root=${HC_STORE_PATH} (from config)] [/srv mount=not in use] [debug mode=false]"
+    echo "Usage: $0 [store root=${HC_STORE_PATH} (from config)] [/srv mount=not in use]"
     exit
 ;;
 "")
@@ -55,19 +55,6 @@ case "$2" in
 ;;
 *)
     SRV="$2"
-;;
-esac
-
-case "${3,,}" in
-true)
-    CONTAINER_DEBUG="true"
-;;
-""|false)
-    CONTAINER_DEBUG="false"
-;;
-*)
-    echo "Unknown debug value \"$3\"!" >&2
-    exit 1
 ;;
 esac
 
@@ -137,12 +124,11 @@ if [ ! -f "${STORE}/format" ]; then
 
     echo "Copying store"
     # Mount store as /nix/outside, so the container can copy files between internal store and outside store
-    # shellcheck disable=SC2086 # CONTAINER_DEBUG_ARG may contain space separated options for docker -> unquoted
     docker run \
         $EXTRA_FLAGS \
         --mount type=bind,source="${STORE}/nix",target=/nix/outside \
         --mount type=bind,source="${STORE}/home",target=/nix/outside_home \
-        -e SETUP_RUN=1 $CONTAINER_DEBUG_ARG -t "${HC_BASE_LABEL}"
+        -e SETUP_RUN=1 -t "${HC_BASE_LABEL}"
 
     # Mount store over the nix store, run rest of the setup
     mkdir -p "${STORE}/home"
@@ -232,25 +218,12 @@ if [ -t 0 ] && [ -t 1 ]; then
     EXTRA_FLAGS+=" -i"
 fi
 
-if [ "$CONTAINER_DEBUG" = "true" ]; then
-    # Debug run
-    # shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
-    docker run \
-        --name "${HC_BASE_LABEL}-cnt" \
-        -p "${HC_PORT}:3000" \
-        $EXTRA_FLAGS \
-        $MOUNTS \
-        $HOSTS \
-        -e SETUP_RUN="ext" \
-        -t "${HC_BASE_LABEL}"
-else
-    # Regular run
-    # shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
-    docker run \
-        --name "${HC_BASE_LABEL}-cnt" \
-        -p "${HC_PORT}:3000" \
-        $EXTRA_FLAGS \
-        $MOUNTS \
-        $HOSTS \
-        -t "${HC_BASE_LABEL}"
-fi
+# Regular run
+# shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
+docker run \
+    --name "${HC_BASE_LABEL}-cnt" \
+    -p "${HC_PORT}:3000" \
+    $EXTRA_FLAGS \
+    $MOUNTS \
+    $HOSTS \
+    -t "${HC_BASE_LABEL}"

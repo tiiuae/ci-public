@@ -7,7 +7,7 @@ See confs/hydra.default for the values that can be adjusted.
 
 
 To create hydra container:
-./build_hydra.sh [uid=current uid] [gid=current gid] [debug=false]
+./build_hydra.sh [uid=current uid] [gid=current gid]
 The uid and the gid of the hydra user inside the container
 should be such that they have write permissions to the external
 persistent store.
@@ -18,21 +18,13 @@ Set path to hydractl.py to environment variable HYDRACTL
 ./run_hydra.sh [store directory]
 
 Regular (second and later) container run:
-./run_hydra.sh [store directory] [/srv directory] [debug=false]
+./run_hydra.sh [store directory] [/srv directory]
 Hydra interface is available at "http://localhost:3000"
 Admin username is 'hydra'
 The directory to mount as volume under "/srv" in the container
 is completely optional, but it can be handy for making
 local builds as one can have their sources anywhere in the
 host system and just refer to them via /srv in the container.
-
-
-If you have debug version of the container, you can make
-it to run custom script instead of the normal one running
-hydra services.
-Place your script as [store]/nix/var/nix/external_script
-and give "true" as the third parameter to ./run_hydra.sh
-
 
  ----
 

@@ -58,9 +58,6 @@ RUN chmod +x /setup/provenance.py
 ARG CI_COMMIT_HASH
 RUN echo "${CI_COMMIT_HASH}" > /setup/ci-version
 
-ARG CONTAINER_DEBUG=false
-RUN touch /etc/container-debug-${CONTAINER_DEBUG}
-
 USER hydra
 
 WORKDIR /launch
