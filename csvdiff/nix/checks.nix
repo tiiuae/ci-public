@@ -12,10 +12,28 @@
         # checks that copyright headers are compliant
         reuse =
           pkgs.runCommandLocal "reuse-lint" {
-            buildInputs = [pkgs.reuse];
+            nativeBuildInputs = [pkgs.reuse];
           } ''
             cd ${../.}
             reuse --root . lint
+            touch $out
+          '';
+        # pycodestyle
+        pycodestyle =
+          pkgs.runCommandLocal "pycodestyle" {
+            nativeBuildInputs = [pkgs.python3.pkgs.pycodestyle];
+          } ''
+            cd ${../.}
+            pycodestyle --max-line-length 90 $(find . -name "*.py" ! -path "*venv*" ! -path "*eggs*")
+            touch $out
+          '';
+        # pylint
+        pylint =
+          pkgs.runCommandLocal "pylint" {
+            nativeBuildInputs = with pkgs.python3Packages; [colorlog pandas pylint pytest];
+          } ''
+            cd ${../.}
+            pylint --disable duplicate-code -rn $(find . -name "*.py" ! -path "*venv*" ! -path "*eggs*")
             touch $out
           '';
       }
