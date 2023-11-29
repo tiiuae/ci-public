@@ -321,7 +321,7 @@ def PRActions(SOURCE, PR, TARGET, myfile, USER, SOURCE_REPO, timetoken):
         print(f"--> Hydra FLAKE:{FLAKE}")
         print(f"--> Hydra JOBSET:{JOBSET}")
     APCOMMAND = f"python3 {HYDRACTL} {SERVER}  AP --project {PROJECT} --display {DESCRIPTION}"
-    AJCOMMAND = f"python3 {HYDRACTL} {SERVER} AJ --description {DESCRIPTION} --check 300 --type flake --flake {FLAKE} -s enabled --jobset {JOBSET} --project {PROJECT}"
+    AJCOMMAND = f"python3 {HYDRACTL} {SERVER} AJ --description {DESCRIPTION} --check 0 --type flake --flake {FLAKE} -s enabled --jobset {JOBSET} --project {PROJECT}"
     if (VERBOSEMODE is not None):
         print("")
         print(f"Created Hydra CLI APCOMMAND:{APCOMMAND}")
