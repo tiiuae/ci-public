@@ -14,7 +14,7 @@ HC_BASE_LABEL="hydra"
 
 # Channel that contents of the container itself, e.g., hydra, will be
 # fetched from. Currently just the version part of the channel names.
-#HC_CHANNEL="23.05"
+#HC_CHANNEL="23.11"
 
 # Server identifier
 HC_PB_SRV="hydra"
