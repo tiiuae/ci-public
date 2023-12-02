@@ -25,10 +25,10 @@ PWFILE=$(nix-store --add passwd)
 GRFILE=$(nix-store --add group)
 
 rm /etc/passwd
-ln -s $PWFILE /etc/passwd
+nix-store --add-root /etc/passwd --indirect --realise "$PWFILE"
 
 rm /etc/group
-ln -s $GRFILE /etc/group
+nix-store --add-root /etc/group --indirect --realise "$GRFILE"
 
 chown -R hydra:hydra /home/hydra
 

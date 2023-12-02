@@ -45,5 +45,5 @@ CONFFILE=$(nix-store --add nix.conf)
 
 mkdir -p /home/hydra/etc
 rm /etc/nix/nix.conf
-ln -s "$CONFFILE" /home/hydra/etc/nix.conf
+nix-store --add-root /home/hydra/etc/nix.conf --indirect --realise "$CONFFILE"
 ln -s "/home/hydra/etc/nix.conf" /etc/nix/nix.conf
