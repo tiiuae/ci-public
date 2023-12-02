@@ -11,7 +11,7 @@ nix-channel --remove nixpkgs
 if [ "$1" != "" ] ; then
   nix-channel --add "https://nixos.org/channels/nixos-${1}"
 else
-  DEFCHANNEL="23.05"
+  DEFCHANNEL="23.11"
   nix-channel --add "https://nixos.org/channels/nixos-${DEFCHANNEL}"
 fi
 
