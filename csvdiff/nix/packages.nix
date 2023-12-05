@@ -21,16 +21,7 @@ _: {
 
         pythonImportsCheck = ["csvdiff"];
 
-        propagatedBuildInputs =
-          [
-            pkgs.reuse
-          ]
-          ++ (with pp; [
-            colorlog
-            gitpython
-            pandas
-            tabulate
-          ]);
+        propagatedBuildInputs = with pp; [colorlog pandas];
       };
     };
   };
