@@ -21,9 +21,9 @@ with open(project_path("VERSION"), encoding="utf-8") as f:
     version = f.read().strip()
 
 requires = [
-    "pandas",
     "colorlog",
-    "wheel",
+    "pandas",
+    "setuptools",
 ]
 
 setuptools.setup(
