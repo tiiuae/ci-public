@@ -8,6 +8,7 @@
 
       packages = with pkgs; [
         reuse
+        pylint
         (
           pkgs.python3.withPackages (ps:
             with ps; [
