@@ -1,10 +1,9 @@
-"""
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
 
 
-
+"""
 
 # Aiming to be used with Hydra (Nixos) builder for Ghaf project https://github.com/tiiuae/ghaf
 
@@ -35,13 +34,14 @@ from collections import defaultdict
 # pylint: disable=unused-import # tool cant handle urlib import
 import urllib.request
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 import copy
 import time
 from datetime import datetime
 import subprocess
 import schedule
-from github import Github
+from github import Github,UnknownObjectException
 from aiohttp.web_routedef import options
 
 
@@ -76,6 +76,12 @@ DRYRUNMODE = None
 VERBOSEMODE = None
 SERVICEMODE = None
 CHERRYPICKEDPR = None
+
+
+# checked PR creators (inside given organization)
+organization_users=[]
+
+
 
 
 #########################################################################################################
@@ -187,9 +193,31 @@ def CheckChangedPR(pr, repo, counter):
     Check if PR (still open) has been changed since creation time
     """
     print(f"Checking PR:{pr}")
-    pr = repo.get_pull(counter)
-    CREATED = pr.created_at
-    commits = pr.get_commits()
+
+    try:
+        pr = repo.get_pull(counter)
+    except UnknownObjectException as e:
+        print(f"Did not get Github PR counter. Maybe Rate limit occured? Error: {e}")
+        ExitProg(12)
+    except Exception as e:
+        print(f"Did not get Github PR counter. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(13)
+    try:
+        CREATED = pr.created_at
+    except UnknownObjectException as e:
+        print(f"Did not get Github PR create time. Maybe Rate limit occured? Error: {e}")
+        ExitProg(14)
+    except Exception as e:
+        print(f"Did not get Github PR createtime. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(15)
+    try:
+        commits = pr.get_commits()
+    except UnknownObjectException as e:
+        print(f"Did not get Github PR commits. Maybe Rate limit occured? Error: {e}")
+        ExitProg(16)
+    except Exception as e:
+        print(f"Did not get Github PR commits. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(17)
     # Sort the commits by the commit timestamp in descending order
     sorted_commits = sorted(
         commits, key=lambda c: c.commit.committer.date, reverse=True)
@@ -251,24 +279,45 @@ def PRBuilding(data, ErroCounter, g, org, counter, myfile, tbd_list, timetoken):
         ErroCounter = ErroCounter+1
 
     USER = data["user"]["login"]
-    user = g.get_user(USER)
+    UserOK=False
+    #global organization_users
 
-    if (org.has_in_members(user)):
-        print(
-            f"---> The user '{USER}' is a member of the organization '{ORGANIZATION}'.")
+    if (USER in organization_users):
+        UserOK=True
+        print(f"---> Earlier check found:'{USER}' is a member of the organization '{ORGANIZATION}'.")
+
+    else:
+        print('User was not checked previously for organization membership, checking now')
+        try:
+            user = g.get_user(USER)
+
+        except UnknownObjectException as e:
+            print(f"Did not get Github PR creator. Maybe Rate limit occured? Error: {e}")
+            ExitProg(4)
+        except Exception as e:
+            print(f"Did not get Github PR creator. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+            ExitProg(4)
+
+        if (org.has_in_members(user)):
+            print(
+                f"---> The user '{USER}' is a member of the organization '{ORGANIZATION}'.")
+            organization_users.append(USER)
+            UserOK = True
+            
+        else:
+            print(
+                f"The user: {USER} is not a member of the organization {ORGANIZATION}")
+            print("No build activities done")
+            UserOK = False
+    if(UserOK is True):
         if (counter in tbd_list):
             print(f"------> Handling PR number:{counter}")
             if (ErroCounter == 0):
-
-                PRActions(SOURCE, counter, TARGET, myfile,
-                          USER, SOURCE_REPO, timetoken)
+                PRActions(SOURCE, counter, TARGET, myfile, USER, SOURCE_REPO, timetoken)
 
             else:
                 print("Errors in PR data from Github, not doing build activities")
-    else:
-        print(
-            f"The user: {USER} is not a member of the organization {ORGANIZATION}")
-        print("No build activities done")
+
     print("--------------------------------------------------------------------------------------------------")
 
 
@@ -446,9 +495,35 @@ def Finder():
         githubtoken = None
 
     g = Github(githubtoken)
-    repo = g.get_repo(TESTREPO)
-    org = g.get_organization(ORGANIZATION)
-    pulls = repo.get_pulls(state='open', sort='created', base='main')
+
+    try:
+        repo = g.get_repo(TESTREPO)
+    except UnknownObjectException as e:
+        print(f"Did not get Github repo. Check your config? Error: {e}")
+        ExitProg(4)
+    except Exception as e:
+        print(f"Did not get Github PR creator. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(4)
+
+
+    try:
+        org = g.get_organization(ORGANIZATION)
+    except UnknownObjectException as e:
+        print(f"Did not get Github organization. Check your config? Error: {e}")
+        ExitProg(18)
+    except Exception as e:
+        print(f"Did not get Github organization. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(19)
+
+    try:
+        pulls = repo.get_pulls(state='open', sort='created', base='main')
+    except UnknownObjectException as e:
+        print(f"Did not get Github PullRequests. Check your config? Error: {e}")
+        ExitProg(20)
+    except Exception as e:
+        print(f"Did not get Github PullRequests. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+        ExitProg(21)
+
 
     ##########################################################################
     # Get all open PRs into a dictionary for data processing
@@ -509,20 +584,33 @@ def Finder():
     ErroCounter = 0
     for newPr in copy_open_prs:
 
-        url = str(TESTPR)+"/"+str(newPr)  # kept format intentionally
-        with urlopen(url) as response:
-            body = response.read()
-        data = json.loads(body)
-        print("###########################################################################################################################")
-        print("==> PR:"+url)
-
         if (CHERRYPICKEDPR is not None):
             if (CHERRYPICKEDPR == newPr):
                 print(f"===> To be cherry picked PR found:{newPr}")
             else:
-                print(
-                    f"Skipping this one, trying to cherry pick PR:{CHERRYPICKEDPR}")
+                print(f"Skipping this one {newPr}, trying to cherry pick PR:{CHERRYPICKEDPR}")
                 continue
+
+
+        url = str(TESTPR)+"/"+str(newPr)  # kept format intentionally
+        try:
+            with urlopen(url) as response:
+                body = response.read()
+                data = json.loads(body)
+        except HTTPError as e:
+            print(f"HTTP Error {e.code}: {e.reason}")
+            print("==> Github rate limit hit. Wait one hour...")
+            ExitProg(21)
+        except URLError as e:
+            print(f"URL Error: {e.reason}")
+            ExitProg(24)
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            ExitProg(23)
+        print("###########################################################################################################################")
+        print("==> PR:"+url)
+
 
         print(f"==> CHECKING ---> SOURCE PR BRANCH: {data['head']['ref']}")
 
@@ -543,7 +631,15 @@ def Finder():
                 print(f"==> OLD PR in PR list, has been built:{counter}")
 
                 print("Checking if this (still open) PR has been changed")
-                pr = repo.get_pull(counter)
+                try:
+                    pr = repo.get_pull(counter)
+                except UnknownObjectException as e:
+                    print(f"Did not get Github PR creator. Maybe Rate limit occured? Error: {e}")
+                    ExitProg(11)
+                except Exception as e:
+                    print(f"Did not get Github PR creator. General Syntax Error? Maybe Rate limit occured? Error: {e}")
+                    ExitProg(12)
+
                 answer, changetime = CheckChangedPR(pr, repo, counter)
                 if (answer == "YES"):
                     print(f"PR changed, timetoken in use:{changetime}")
@@ -714,7 +810,14 @@ def main(argv):
     else:
         print("Running command just once")
         Finder()
+#######################################################
 
+
+def ExitProg(code):
+    """Exit routine with code (line can be indentified)
+    """
+    print(f'Exiting program!! Exit code: {code}')
+    sys.exit(code)
 
 #######################################################
 # Entry point
