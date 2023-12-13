@@ -144,7 +144,7 @@ pipeline {
                                     [$class: 'StringParameterValue', name: 'server', value: "${params.server}"],
                                     [$class: 'StringParameterValue', name: 'project', value: "${buildData['Project']}"],
                                     [$class: 'BooleanParameterValue', name: 'development', value: params.development],
-                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: false],
+                                    [$class: 'BooleanParameterValue', name: 'hw_tests', value: true],
                                     [$class: 'StringParameterValue', name: 'label', value: "${params.label}"],
                                     [$class: 'StringParameterValue', name: 'device', value: "lenovo-x1"],
                                     [$class: 'BooleanParameterValue', name: 'upload', value: params.upload]
