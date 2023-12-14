@@ -35,11 +35,11 @@ nix-env -qa --meta --json '.*' >meta.json
 check_file_exists meta.json
 
 printf '\n\n---\nRun sbomnix (runtime dependencies)\n---\n'
-nix run github:tiiuae/sbomnix#sbomnix -- "$outputPath" --meta=meta.json --type=runtime |& strip_ansi_colors
+nix run github:tiiuae/sbomnix?rev=c243db5272fb01c4d97cbbb01a095ae514cd2dcb#sbomnix -- "$outputPath" --meta=meta.json |& strip_ansi_colors
 cp sbom.csv "$outdir/sbom.runtime__$buildID.csv"
 cp sbom.cdx.json "$outdir/sbom.runtime__$buildID.cdx.json"
 cp sbom.spdx.json "$outdir/sbom.runtime__$buildID.spdx.json"
 
 printf '\n\n---\nRun vulnxscan (runtime dependencies)\n---\n'
-nix run github:tiiuae/sbomnix#vulnxscan -- "$outputPath" |& strip_ansi_colors
+nix run github:tiiuae/sbomnix?rev=c243db5272fb01c4d97cbbb01a095ae514cd2dcb#vulnxscan -- "$outputPath" |& strip_ansi_colors
 cp vulns.csv "$outdir/vulns.runtime__$buildID.csv"
