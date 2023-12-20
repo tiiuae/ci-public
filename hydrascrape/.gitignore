@@ -3,3 +3,4 @@
 !/Pipfile.lock
 *.json
 wlist.txt
+.mypy_cache

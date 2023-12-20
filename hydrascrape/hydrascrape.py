@@ -363,13 +363,15 @@ def save_json(binfo):
 
     @param binfo: Dictionary containing build information
     """
-    filename = f"{binfo['Build ID']}.json"
+    filename = f"{binfo['Server']}/{binfo['Build ID']}.json"
     if DEBUG:
         print(f"Writing json info into {filename}")
 
     json_obj = json.dumps(binfo, indent=2)
 
     try:
+        if not os.path.exists(binfo["Server"]):
+            os.makedirs(binfo["Server"])
         with open(filename, "w", encoding="utf-8") as outf:
             outf.write(json_obj)
 

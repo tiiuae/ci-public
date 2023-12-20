@@ -39,7 +39,7 @@ pipeline {
             }
             steps {
                 script {
-                    sh "python3 hydrascrape/hydrascrape.py ${params.server}.vedenemo.dev ${params.project} ${params.jobset} handled_builds_${params.server} "+ '\'python3 hydrascrape/action.py\''
+                    sh "python3 hydrascrape/hydrascrape.py ${params.server}.vedenemo.dev ${params.project} ${params.jobset} ${params.server}.vedenemo.dev/handled_builds "+ '\'python3 hydrascrape/action.py\''
                 }
             }
         }
@@ -56,7 +56,7 @@ pipeline {
                         def buildId = data[0]
 
                         // Get postBuild Data from .json
-                        def buildData = readJSON file: "${buildId}.json"
+                        def buildData = readJSON file: "${params.server}.vedenemo.dev/${buildId}.json"
                         def outputPath = "${buildData['Outputs'][0]['output']}"
                         println("BuildID: ${buildId} Output path: ${outputPath}")
 
@@ -64,8 +64,10 @@ pipeline {
                         sh "mkdir -p ${resultsPath}/${buildId}"
 
                         // copy files
-                        sh "cp ${buildId}.json ${resultsPath}/${buildId}/"
-                        sh "cp ${buildData['Provenance']['path']} ${resultsPath}/${buildId}/"
+                        sh "cp ${params.server}.vedenemo.dev/${buildId}.json ${resultsPath}/${buildId}/"
+                        // -n option to not overwrite, because the provenance file is not overwritable
+                        // due to coming from nix store and thus being read-only
+                        sh "cp -n ${buildData['Provenance']['path']} ${resultsPath}/${buildId}/"
 
                         if ("${buildData['Job']}".contains("orin-agx")) {
                             try {
