@@ -45,7 +45,8 @@ def send_help():
     """Print help and exit"""
     # pylint: disable=line-too-long
 
-    print("""
+    print(
+        """
 Usage: python3 hydrascrape.py <server> <project regexp> <jobset regexp> <handled builds file> <action> [options]
 
 Tries to find builds to handle for specific projects and jobsets from a hydra server
@@ -63,7 +64,8 @@ Available options:
   -hp     Include hidden projects in search
   -dj     Include disabled jobsets in search
   -hj     Include hidden jobsets in search
-    """)
+    """
+    )
     sys.exit(0)
 
 
@@ -78,7 +80,7 @@ def get_page(context, url):
     if DEBUG:
         print(f"Fetching: {url}")
 
-    req = urllib.request.Request(url, headers=context['headers'])
+    req = urllib.request.Request(url, headers=context["headers"])
     try:
         response = urllib.request.urlopen(req)
     except HTTPError as error:
@@ -86,12 +88,12 @@ def get_page(context, url):
         return ""
 
     # Decompress if gzipped content
-    if response.info().get('Content-Encoding') == 'gzip':
+    if response.info().get("Content-Encoding") == "gzip":
         text = gzip.decompress(response.read())
-    elif response.info().get('Content-Encoding') == 'deflate':
+    elif response.info().get("Content-Encoding") == "deflate":
         text = response.read()
-    elif response.info().get('Content-Encoding'):
-        print('Encoding type unknown', file=sys.stderr)
+    elif response.info().get("Content-Encoding"):
+        print("Encoding type unknown", file=sys.stderr)
         return ""
     else:
         text = response.read()
@@ -142,8 +144,10 @@ def get_handled(filename):
                 if as_int != -1:
                     handled.append(as_int)
                 else:
-                    print(f"Weird build number in handled builds file: {bid}",
-                          file=sys.stderr)
+                    print(
+                        f"Weird build number in handled builds file: {bid}",
+                        file=sys.stderr,
+                    )
 
         if DEBUG:
             print(f"handled = {handled}")
@@ -153,8 +157,7 @@ def get_handled(filename):
             print(f"{filename} not found")
 
     except PermissionError as perm_error:
-        print(f"Cannot read {filename}: {perm_error.strerror}",
-              file=sys.stderr)
+        print(f"Cannot read {filename}: {perm_error.strerror}", file=sys.stderr)
         sys.exit(1)
 
     return handled
@@ -173,8 +176,7 @@ def update_handled(filename, handled):
                 handled_file.write(f"{build}\n")
 
     except PermissionError as perm_error:
-        print(
-            f"Cannot update {filename}: {perm_error.strerror}", file=sys.stderr)
+        print(f"Cannot update {filename}: {perm_error.strerror}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -188,12 +190,12 @@ def get_postbuild_info(context: dict, log_hash: str, binfo: dict):
     pat = re.compile('^.*=".*"$')
 
     # Handle line by line
-    for line in text.split('\n'):
+    for line in text.split("\n"):
         # Throw away extra spaces
         line = line.strip()
         # If pattern matches store the value in binfo
         if pat.match(line):
-            varname = line.split("=")[0].lower().capitalize().replace('_', ' ')
+            varname = line.split("=")[0].lower().capitalize().replace("_", " ")
             value = line.split('"')[1]
             binfo[varname] = value
 
@@ -238,7 +240,7 @@ def get_build_info(context, bnum):
 
     for div in soup.find_all("div", {"id": "tabs-summary"}):
         for header in div.find_all("th"):
-            hdr = header.text.strip().rstrip(':')
+            hdr = header.text.strip().rstrip(":")
             val = summarykeys.get(hdr)
             if val is not None:
                 if val == -1:
@@ -247,7 +249,7 @@ def get_build_info(context, bnum):
                 try:
                     data = header.find_next_sibling().contents[val]
                     if data.name == "time":
-                        binfo[hdr] = data['data-timestamp']
+                        binfo[hdr] = data["data-timestamp"]
                     else:
                         binfo[hdr] = data.text.strip()
                 except (IndexError, AttributeError):
@@ -256,14 +258,14 @@ def get_build_info(context, bnum):
 
     for div in soup.find_all("div", {"id": "tabs-details"}):
         for header in div.find_all("th"):
-            hdr = header.text.strip().rstrip(':').replace('(', '').replace(')', '')
+            hdr = header.text.strip().rstrip(":").replace("(", "").replace(")", "")
             if hdr in detailkeys:
                 try:
                     data = header.find_next_sibling().contents[0]
                     if data.name == "time":
-                        binfo[hdr] = data['data-timestamp']
+                        binfo[hdr] = data["data-timestamp"]
                     else:
-                        val = data.text.split('\n')[0].strip()
+                        val = data.text.split("\n")[0].strip()
                         if val != "not given":
                             binfo[hdr] = val
 
@@ -280,17 +282,18 @@ def get_build_info(context, bnum):
                     input_name = tds[0].text.strip()
                     input_source = tds[2].text.strip()
                     input_hash = tds[3].text.strip()
-                    inputs.append({"Name": input_name,
-                                   "Hash": input_hash,
-                                   "Source": input_source})
+                    inputs.append(
+                        {"Name": input_name, "Hash": input_hash, "Source": input_source}
+                    )
                 except IndexError:
                     if DEBUG:
                         print("Trouble getting build inputs")
     if len(inputs) > 0:
-        binfo['Inputs'] = inputs
-    binfo['Output store paths'] = binfo['Output store paths'].split(' ')
-    binfo['Job'] = soup.find(
-        "div", {"class": "page-header"}).text.split(':')[-1].strip()
+        binfo["Inputs"] = inputs
+    binfo["Output store paths"] = binfo["Output store paths"].split(" ")
+    binfo["Job"] = (
+        soup.find("div", {"class": "page-header"}).text.split(":")[-1].strip()
+    )
 
     # Find run command log hash entries for build
     loghash = None
@@ -303,7 +306,7 @@ def get_build_info(context, bnum):
             binfo["RunCommand status"] = status_text
         else:
             for link in row.find_all("a", {"class": "btn btn-secondary btn-sm"}):
-                href = link.get('href')
+                href = link.get("href")
                 if (
                     href is not None
                     and href.find("/runcommandlog/") != -1
@@ -332,23 +335,25 @@ def set_env(binfo):
     for key in binfo:
         if key == "Output store paths":
             # Set the plain hash of the first output separately
-            env["HYDRA_OUTPUT_STORE_HASH"] = binfo[key][0].removeprefix(
-                "/nix/store/").split('-', 1)[0]
-            env["HYDRA_OUTPUT_STORE_PATHS"] = ' '.join(binfo[key])
+            env["HYDRA_OUTPUT_STORE_HASH"] = (
+                binfo[key][0].removeprefix("/nix/store/").split("-", 1)[0]
+            )
+            env["HYDRA_OUTPUT_STORE_PATHS"] = " ".join(binfo[key])
             continue
         if key == "Derivation store path":
             # Set the plain hash of the derivation separately
-            env["HYDRA_DERIVATION_STORE_HASH"] = binfo[key].removeprefix(
-                "/nix/store/").split('-', 1)[0]
+            env["HYDRA_DERIVATION_STORE_HASH"] = (
+                binfo[key].removeprefix("/nix/store/").split("-", 1)[0]
+            )
         if key == "Inputs":
             env["HYDRA_INPUTS"] = ""
             for i in binfo[key]:
                 env["HYDRA_INPUTS"] += f"{i['Name'].upper()} "
-                env[f"HYDRA_{i['Name'].upper()}_HASH"] = i['Hash']
-                env[f"HYDRA_{i['Name'].upper()}_SOURCE"] = i['Source']
+                env[f"HYDRA_{i['Name'].upper()}_HASH"] = i["Hash"]
+                env[f"HYDRA_{i['Name'].upper()}_SOURCE"] = i["Source"]
             env["HYDRA_INPUTS"] = env["HYDRA_INPUTS"].strip()
             continue
-        env["HYDRA_" + key.upper().replace(' ', '_')] = binfo[key]
+        env["HYDRA_" + key.upper().replace(" ", "_")] = binfo[key]
 
     return env
 
@@ -369,8 +374,10 @@ def save_json(binfo):
             outf.write(json_obj)
 
     except PermissionError as perm_error:
-        print(f"Could not write {perm_error.filename}: {perm_error.strerror}",
-              file=sys.stderr)
+        print(
+            f"Could not write {perm_error.filename}: {perm_error.strerror}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 
@@ -378,7 +385,7 @@ def get_projects(context):
     """Gets projects from a hydra site
     @param context: Connection context
     """
-    text = get_page(context, context['hydra_url'])
+    text = get_page(context, context["hydra_url"])
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
     projects = soup.find_all("tr", {"class": "project"})
@@ -387,25 +394,22 @@ def get_projects(context):
 
     plist = []
     for proj in projects:
-        plist.append(
-            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
+        plist.append(proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     hlist = []
     for proj in hiddens:
-        hlist.append(
-            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
+        hlist.append(proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     dlist = []
     for proj in disableds:
-        dlist.append(
-            proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
+        dlist.append(proj.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
-    if context['hid_proj'] is False:
+    if context["hid_proj"] is False:
         for proj in hlist:
             if proj in plist:
                 plist.remove(proj)
 
-    if context['dis_proj'] is False:
+    if context["dis_proj"] is False:
         for proj in dlist:
             if proj in plist:
                 plist.remove(proj)
@@ -430,25 +434,22 @@ def get_jobsets(context, project):
 
     jlist = []
     for jobset in jobsets:
-        jlist.append(jobset.find(
-            "a", {"class": "row-link"})["href"].split("/")[-1])
+        jlist.append(jobset.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     hlist = []
     for jobset in hiddens:
-        hlist.append(jobset.find(
-            "a", {"class": "row-link"})["href"].split("/")[-1])
+        hlist.append(jobset.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
     dlist = []
     for jobset in disableds:
-        dlist.append(jobset.find(
-            "a", {"class": "row-link"})["href"].split("/")[-1])
+        dlist.append(jobset.find("a", {"class": "row-link"})["href"].split("/")[-1])
 
-    if context['hid_jobset'] is False:
+    if context["hid_jobset"] is False:
         for jobset in hlist:
             if jobset in jlist:
                 jlist.remove(jobset)
 
-    if context['dis_jobset'] is False:
+    if context["dis_jobset"] is False:
         for jobset in dlist:
             if jobset in jlist:
                 jlist.remove(jobset)
@@ -469,8 +470,7 @@ def handle_jobset(context, project, jobset, handled):
     """
     # It is assumed here that all evaluations containing builds that need processing
     # are found on the first page of evaluations listing
-    text = get_page(
-        context, f"{context['hydra_url']}jobset/{project}/{jobset}")
+    text = get_page(context, f"{context['hydra_url']}jobset/{project}/{jobset}")
 
     soup = bs4.BeautifulSoup(text, features="html.parser")
 
@@ -487,15 +487,17 @@ def handle_jobset(context, project, jobset, handled):
     for i in builds:
         if i not in handled:
             binfo = get_build_info(context, i)
-            buildid = convert_int(binfo.get('Build ID'), -1)
+            buildid = convert_int(binfo.get("Build ID"), -1)
 
             if buildid != i:
                 if DEBUG:
-                    print(f"Build ID mismatch: build id on page = {buildid}, "
-                          f"build id requested = {i}, skipping")
+                    print(
+                        f"Build ID mismatch: build id on page = {buildid}, "
+                        f"build id requested = {i}, skipping"
+                    )
                 continue
 
-            status = binfo.get('Status', 'Unknown')
+            status = binfo.get("Status", "Unknown")
 
             if status in ("Scheduled to be built", "Build in progress"):
                 if DEBUG:
@@ -503,37 +505,40 @@ def handle_jobset(context, project, jobset, handled):
                 continue
 
             if status == "Success":
-
                 # check postbuild status for succeeded builds only
                 runcmd_status = binfo["RunCommand status"]
                 if runcmd_status is None:
                     if DEBUG:
                         print(
-                            f"RunCommands for build {i} are not finished yet, skipping")
+                            f"RunCommands for build {i} are not finished yet, skipping"
+                        )
                     continue
 
                 elif runcmd_status != "Succeeded":
                     # if there is a status but it was not success,
                     # there is no need to retry later. just mark as handled.
                     if DEBUG:
-                        print(f"RunCommands for build {i} {runcmd_status}, "
-                              "marking as handled")
+                        print(
+                            f"RunCommands for build {i} {runcmd_status}, "
+                            "marking as handled"
+                        )
                     new_handled.append(i)
                     continue
 
-                binfo['Server'] = context['server']
-                binfo['Project'] = project
-                binfo['Jobset'] = jobset
-                del binfo['Status']
+                binfo["Server"] = context["server"]
+                binfo["Project"] = project
+                binfo["Jobset"] = jobset
+                del binfo["Status"]
                 env = set_env(binfo)
-                if context['json_en']:
+                if context["json_en"]:
                     save_json(binfo)
                 if DEBUG:
                     print(f"Handling {i} " + "-" * 60)
 
                 # Run the user specified action with build info in environment
-                result = subprocess.run(context['action'], shell=True,
-                                        env=env, check=False)
+                result = subprocess.run(
+                    context["action"], shell=True, env=env, check=False
+                )
 
                 if result.returncode == 0:
                     new_handled.append(i)
@@ -558,17 +563,17 @@ def main_locked(context):
 
     @param context: Connection context
     """
-    context['hydra_url'] = f"https://{context['server']}/"
-    context['headers'] = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate',
-        'User-Agent': 'hydrascraper.py v1.0'
+    context["hydra_url"] = f"https://{context['server']}/"
+    context["headers"] = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate",
+        "User-Agent": "hydrascraper.py v1.0",
     }
 
-    handled = get_handled(context['handled_file'])
+    handled = get_handled(context["handled_file"])
 
     projects = get_projects(context)
-    projects = list(filter(context['re_p'].match, projects))
+    projects = list(filter(context["re_p"].match, projects))
     if DEBUG:
         print("Selected projects: ", projects)
 
@@ -577,7 +582,7 @@ def main_locked(context):
         jobsets[proj] = get_jobsets(context, proj)
 
     for proj in projects:
-        jobsets[proj] = list(filter(context['re_js'].match, jobsets[proj]))
+        jobsets[proj] = list(filter(context["re_js"].match, jobsets[proj]))
         if DEBUG:
             print(f"{proj} selected jobsets: {jobsets[proj]}")
 
@@ -585,7 +590,7 @@ def main_locked(context):
         for jobset in jobsets[project]:
             handled += handle_jobset(context, project, jobset, handled)
 
-    update_handled(context['handled_file'], handled)
+    update_handled(context["handled_file"], handled)
 
 
 def json_e(context):
@@ -593,7 +598,7 @@ def json_e(context):
 
     @param context: Connection context
     """
-    context['json_en'] = True
+    context["json_en"] = True
     if DEBUG:
         print("JSON enabled")
 
@@ -610,7 +615,7 @@ def hp_e(context):
 
     @param context: Connection context
     """
-    context['hid_proj'] = True
+    context["hid_proj"] = True
     if DEBUG:
         print("Including hidden projects")
 
@@ -620,7 +625,7 @@ def dp_e(context):
 
     @param context: Connection context
     """
-    context['dis_proj'] = True
+    context["dis_proj"] = True
     if DEBUG:
         print("Including disabled projects")
 
@@ -630,7 +635,7 @@ def hj_e(context):
 
     @param context: Connection context
     """
-    context['hid_jobset'] = True
+    context["hid_jobset"] = True
     if DEBUG:
         print("Including hidden jobsets")
 
@@ -640,7 +645,7 @@ def dj_e(context):
 
     @param context: Connection context
     """
-    context['dis_jobset'] = True
+    context["dis_jobset"] = True
     if DEBUG:
         print("Including disabled jobsets")
 
@@ -655,26 +660,29 @@ def main(argv):
     DEBUG = convert_int(os.getenv("DEBUG"))
 
     # Map options to functions setting the flags
-    argfu = {"-json": json_e,
-             "-debug": debug_e,
-             "-hp": hp_e,
-             "-dp": dp_e,
-             "-hj": hj_e,
-             "-dj": dj_e,
-             }
+    argfu = {
+        "-json": json_e,
+        "-debug": debug_e,
+        "-hp": hp_e,
+        "-dp": dp_e,
+        "-hj": hj_e,
+        "-dj": dj_e,
+    }
 
     # Default settings in context
-    context = {'json_en': False,
-               'dis_proj': False,
-               'hid_proj': False,
-               'dis_jobset': False,
-               'hid_jobset': False}
+    context = {
+        "json_en": False,
+        "dis_proj": False,
+        "hid_proj": False,
+        "dis_jobset": False,
+        "hid_jobset": False,
+    }
 
     # Help user, too few arguments given
     if len(argv) < 5:
         send_help()
 
-    context['server'] = argv[0]
+    context["server"] = argv[0]
 
     regexes = []
     for i in [0, 1]:
@@ -688,10 +696,10 @@ def main(argv):
             print(f"Regular expression error: {error.msg}", file=sys.stderr)
             sys.exit(1)
 
-    context['re_p'] = regexes[0]
-    context['re_js'] = regexes[1]
-    context['handled_file'] = argv[3]
-    context['action'] = argv[4]
+    context["re_p"] = regexes[0]
+    context["re_js"] = regexes[1]
+    context["handled_file"] = argv[3]
+    context["action"] = argv[4]
 
     if len(argv) > 5:
         # Process options
@@ -711,12 +719,15 @@ def main(argv):
     except filelock.Timeout as timeout:
         if DEBUG:
             print(f"Unable to get lock {timeout.lock_file}")
-            print("If no other hydrascrapers are running, "
-                  "check permissions and/or delete the lock file")
+            print(
+                "If no other hydrascrapers are running, "
+                "check permissions and/or delete the lock file"
+            )
 
     except PermissionError as perm_error:
         print(
-            f"Could not aquire {argv[3]}.lock: {perm_error.strerror}", file=sys.stderr)
+            f"Could not aquire {argv[3]}.lock: {perm_error.strerror}", file=sys.stderr
+        )
 
     finally:
         lock.release()
