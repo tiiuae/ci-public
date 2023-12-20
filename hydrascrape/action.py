@@ -26,21 +26,20 @@ def nix_copy(
     cacheurl: str,
     paths: list[str],
     derivation: bool = False,
-    refresh: bool = False
+    refresh: bool = False,
 ):
     """Copies stuff from cache"""
     if len(paths) < 1:
         return
 
     if refresh:
-        refreshcmd = ["nix", "path-info", "--refresh",
-                      "--store", cacheurl]
+        refreshcmd = ["nix", "path-info", "--refresh", "--store", cacheurl]
         refreshcmd.extend(paths)
         subprocess.run(refreshcmd, stdout=subprocess.PIPE, check=False)
 
-    nixcopy = ['nix', 'copy', '--from', cacheurl]
+    nixcopy = ["nix", "copy", "--from", cacheurl]
     if derivation:
-        nixcopy.insert(2, '--derivation')
+        nixcopy.insert(2, "--derivation")
 
     nixcopy.extend(paths)
 
@@ -59,7 +58,7 @@ def get_outputs(iout: list[dict] | None) -> list:
     oout = []
     if iout is not None:
         for output in iout:
-            outp = output.get('path')
+            outp = output.get("path")
             if outp is not None:
                 oout.append(outp)
     return oout
@@ -105,16 +104,16 @@ def translate(ibinfo: dict, obinfo: dict):
             obinfo[new_name] = val
 
     # Handle outputs separately
-    ooutputs = get_outputs(ibinfo.get('outputs'))
+    ooutputs = get_outputs(ibinfo.get("outputs"))
 
     # Check outputs also
-    obio = obinfo.get('Output store paths')
+    obio = obinfo.get("Output store paths")
     if obio is not None and obio != ooutputs:
         print("Warning! differing build information:", file=sys.stderr)
         print(f"  outputs = {ooutputs}", file=sys.stderr)
         print(f"  Output store paths = {obio}", file=sys.stderr)
 
-    obinfo['Output store paths'] = ooutputs
+    obinfo["Output store paths"] = ooutputs
 
 
 def min_info_from_env() -> dict:
@@ -123,8 +122,7 @@ def min_info_from_env() -> dict:
 
     @return: dictionary of build info
     """
-    envl = ["Server", "Postbuild info",
-            "Maintainers", "Closure size", "Output size"]
+    envl = ["Server", "Postbuild info", "Maintainers", "Closure size", "Output size"]
     res = {}
 
     for name in envl:
@@ -159,17 +157,13 @@ def main():
     for key, value in os.environ.items():
         if key.startswith("HYDRA_POSTBUILD_PACKAGE_OUTPUT_PATH_"):
             index = int(key[-1])
-            signature = os.getenv(
-                f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
+            signature = os.getenv(f"HYDRA_POSTBUILD_PACKAGE_OUTPUT_SIGNATURE_{index}")
             if signature is None:
                 # if signing fails with "no slots" error, we can still accept the build
                 # it will get caught in signature verification
                 print("Warning: No output signature")
                 signature = ""
-            outputs.append([
-                value,
-                signature
-            ])
+            outputs.append([value, signature])
 
     if not outputs:
         perror("Error: Not any POSTBUILD_PACKAGE_OUTPUT defined", 0)
@@ -186,12 +180,11 @@ def main():
 
     # Check status of the build, we are interested only in finished builds
     if (
-        binfo.get('buildStatus') != 0
-        or binfo.get('finished') is not True
-        or binfo.get('event') != "buildFinished"
+        binfo.get("buildStatus") != 0
+        or binfo.get("finished") is not True
+        or binfo.get("event") != "buildFinished"
     ):
-        perror(f"Unexpected build status: {binfo.get('buildStatus')}"
-               ", ignoring", 0)
+        perror(f"Unexpected build status: {binfo.get('buildStatus')}" ", ignoring", 0)
 
     # Copy output paths
     for output in outputs:
@@ -203,7 +196,7 @@ def main():
         nix_copy(cacheurl, to_copy, refresh=True)
 
     # Copy derivation
-    drv = binfo.get('drvPath')
+    drv = binfo.get("drvPath")
     if drv is not None:
         nix_copy(cacheurl, [drv], derivation=True, refresh=True)
 
@@ -229,7 +222,7 @@ def main():
 
     combo["Provenance"] = {
         "path": provenance_file,
-        "signature": os.getenv("HYDRA_PROVENANCE_SIGNATURE")
+        "signature": os.getenv("HYDRA_PROVENANCE_SIGNATURE"),
     }
 
     sd_image = None
