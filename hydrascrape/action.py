@@ -200,8 +200,15 @@ def main():
     if drv is not None:
         nix_copy(cacheurl, [drv], derivation=True, refresh=True)
 
+    handling_directory = (
+        provenance["predicate"]["buildDefinition"]["internalParameters"]["server"]
+        + ".vedenemo.dev"
+    )
+
     try:
-        with open(f"{bnum}.json", "r", encoding="utf-8") as json_file:
+        with open(
+            f"{handling_directory}/{bnum}.json", "r", encoding="utf-8"
+        ) as json_file:
             combo = json.load(json_file)
     except FileNotFoundError:
         # If scraped json is not available, use minimal build info from env
@@ -240,7 +247,7 @@ def main():
         combo["Image"] = None
 
     # Write combined info to scraped build info file
-    with open(f"{bnum}.json", "w", encoding="utf-8") as json_file:
+    with open(f"{handling_directory}/{bnum}.json", "w", encoding="utf-8") as json_file:
         json.dump(combo, json_file, indent=2)
 
     # Add build to post processing list

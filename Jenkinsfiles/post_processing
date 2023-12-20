@@ -32,8 +32,7 @@ pipeline {
         stage('Output signature verification') {
             steps {
                 script {
-                    def splitted = "${JOB_NAME}".split('/')
-                    def buildData = readJSON file: "/home/${params.label}/Jenkins-agent/workspace/${splitted[0]}/hydra_copy/${params.buildID}.json"
+                    def buildData = readJSON file: "${params.resultsPath}/${params.buildID}/${params.buildID}.json"
                     def signature_file = "${buildData['Outputs'][0]['signature']}"
                     build = build(
                         job: "${sigVerfJob}",
@@ -56,8 +55,7 @@ pipeline {
         stage('Provenance signature verification') {
             steps {
                 script {
-                    def splitted = "${JOB_NAME}".split('/')
-                    def buildData = readJSON file: "/home/${params.label}/Jenkins-agent/workspace/${splitted[0]}/hydra_copy/${params.buildID}.json"
+                    def buildData = readJSON file: "${params.resultsPath}/${params.buildID}/${params.buildID}.json"
                     def provenancePath = "${buildData['Provenance']['path']}"
                     def signature_file = "${buildData['Provenance']['signature']}"
                     build = build(
