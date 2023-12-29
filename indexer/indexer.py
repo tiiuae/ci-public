@@ -19,6 +19,7 @@ vulnxsfiles = "vulns.*.csv"
 vulns_fixed = "vulns_fixed.*.csv"
 vulns_new = "vulns_new.*.csv"
 provenancefiles = "*provenance.json"
+provenancesignatures = "*.signature"
 imageprefix = ""
 webifyprefix = ""
 debug = 0
@@ -336,6 +337,11 @@ def main(argv: list[str]):
     rep = get_reports(provenancefiles, f"{webifyprefix}/{bnum}")
     if rep != []:
         result["SLSA Provenance"] = rep
+
+    # Find provenance.signature file
+    rep = get_reports(provenancesignatures, f"{webifyprefix}/{bnum}")
+    if rep != []:
+        result["SLSA Provenance signature"] = rep
 
     # Find fixed vulnerabilities
     rep = get_reports(vulns_fixed, f"{webifyprefix}/{bnum}")
