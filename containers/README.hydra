@@ -94,13 +94,15 @@ before running run_hydra.sh
 
 Hydra supports messaging to Slack channel. One needs first to create new Slack app
 with write rights (https://api.slack.com/apps) and storing given auth token to safe
-private place. Then Slack app must be installed to Slack workspace and to channel to
-be used for build information messages.
+private place. Then Slack app must be installed to Slack workspace and to channel(s)
+to be used for build information messages.
 
 Configuration file slack.conf need to be created and stored manually to /store/home/confs/.
 File content need to be the following:
-line1: Secret Slack auth token
-line2: Name of the Slack channel to be messaged
+  line1: Slack auth secret token (given when Slack application created)
+  line2: [ON/OFF] [slack channel for bad news (failed builds)]
+  line3: [ON/OFF] [slack channel for good news (ok builds)]
+ON=use channel , OFF=do not use channel for messaging
 
 Messager.py implements actual message sending and it is defined to be the current messaging
 tool using env variable POSTBUILD_MSGSCRIPT in the run.sh (container booting code)
