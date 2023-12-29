@@ -7,16 +7,10 @@
 """"
 # Hydra Slack messaging script
 #
-# Prints given message to configured Slack channel with major hydra build
-# information data
+# Prints given message to configured Slack channel(s) (standalone mode)
+# When used with Hydra postbuild, Slacks to given channels major Hydra build information data
 #
-# Slack configuration file format:
-# line1: Slack auth secret token (given when Slack application created)
-# line2: Used Slack channel (Slack application must be installed for this channel for usage)
-#
-# Do not keep this auth file in version control system. Postbuild (user of this script) assumes
-# it is stored to store/home/confs/ in host side.
-#
+# Postbuild (user of this script) assumes it is stored to store/home/confs/ in host side.
 #
 # ------------------------------------------------------------------------
 """
@@ -32,14 +26,27 @@ from slack.errors import SlackApiError
 __version__ = "0.73300"
 MESSAGETEXT = ""
 
-
-parser = argparse.ArgumentParser(description="Send message to Slack channel (as a Slack app)",
+parser = argparse.ArgumentParser(description="Send build result message to Slack channel(s) (as a Slack app)",
 
 
                                  epilog="""
 
-    Configuration file content: line0: slack app token, line1:slack channel to be messaged
+    Configuration file content:
+    line0: slack app token
+    line1: slack channel status for bad news (failed builds) (ON/OFF)  channel name
+    line2: slack channel status for good news (ok builds) (ON/OFF)  channel name
+
+    Example configuration file:
+
+    line0: 1300073000ABC
+    line1: ON bad_news_slack_channel
+    line2: OFF good_news_slack_channel
+
+    --> Slack only failed builds info
+
     Keep token (and configuration file) in safe. Do not store to git.
+
+    Usage example:
 
     python3 messager.py  -m "TEXT FOR SLACKCHANNEL" -f CONFIGURATION FILE"""
 
@@ -50,7 +57,7 @@ parser.add_argument("-f", help='<Slack configuration file>', metavar="file")
 parser.add_argument("-m", help='<Slack message>', metavar="message")
 
 args = parser.parse_args()
-SLACKMESSAGE = args.m or ''
+SLACKMESSAGE = args.m or ''f
 SLACKCONFIGURATIONFILE = args.f or ''
 
 # quick old-school way to check needed parameters
@@ -63,13 +70,22 @@ file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
 if file_exists:
 
-    SLACKMESSAGE = ""  # forming first message part here, not using passed argument
-
-    print("Slack configuration file exists. Going to do the messaging", file=sys.stderr)
+    print("Slack configuration file exists. Going try to do the messaging", file=sys.stderr)
     file = open(SLACKCONFIGURATIONFILE, "r", encoding="utf-8")
-    config_array = file.read().split()
-    slackchannel = str(config_array[1])
-    slacktoken = str(config_array[0])
+    config_array = file.read().splitlines()
+
+    if len(config_array) > 2:
+        slacktoken = str(config_array[0])
+        badcommand,badslackchannel = (str(config_array[1]).split())
+        goodcommand,goodslackchannel = (str(config_array[2]).split())
+    else:
+        print(f"Error in configuration file: {SLACKCONFIGURATIONFILE}. Did not find 3 lines of neede definitions")
+
+    print (f"goodcommand: {goodcommand}, goodchannel: {goodslackchannel}")
+    print (f"bandcommand: {badcommand}, badchannel: {badslackchannel}")
+
+   # TESTING WITHOUT BUILD AS STANDALONE COMMAND: set buildStatNbr 0 (ok build) or >1 (failed build) 
+   # buildStatNbr=1
 
     hydraserver = os.getenv("POSTBUILD_SERVER")
     if hydraserver is None:
@@ -87,6 +103,7 @@ if file_exists:
             # prettyinfo=json.dumps(binfo,indent=3)
             buildjob = str(binfo['job'])
             buildstatus = str(binfo['buildStatus'])
+            buildStatNbr= int(buildstatus)
             buildnumber = str(binfo['build'])
             buildproject = str(binfo['project'])
 
@@ -113,14 +130,24 @@ if file_exists:
                 str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:" + \
                 buildnumber+"\nProject:"+buildproject
 
-    try:
-        client = slack.WebClient(token=slacktoken)
-        client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
+    if (buildStatNbr==0):
+        doit=goodcommand
+        slackchannel=goodslackchannel
+    else:
+        doit=badcommand
+        slackchannel=badslackchannel
 
-    except Exception as e:
-        print(f"Slacking failed! Check your channel name?, error: {e}")
-        sys.exit(1)
+    if (doit=="ON"):
+        try:
+            client = slack.WebClient(token=slacktoken)
+            client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
+            print (f"Asked Slack to process our message (channel: {slackchannel})")
 
-
+        except Exception as e:
+            print(f"Slacking failed! Check your channel name?, error: {e}")
+            sys.exit(1)
+    else:
+        print (f"Slacking not ON for channel: {slackchannel}. Not going to Slack!")
+ 
 else:
     print("No Slack configuration file found. Doing nothing", file=sys.stderr)
