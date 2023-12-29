@@ -58,6 +58,7 @@ pipeline {
                     def buildData = readJSON file: "${params.resultsPath}/${params.buildID}/${params.buildID}.json"
                     def provenancePath = "${buildData['Provenance']['path']}"
                     def signature_file = "${buildData['Provenance']['signature']}"
+
                     build = build(
                         job: "${sigVerfJob}",
                         parameters: [
@@ -68,6 +69,8 @@ pipeline {
                     )
                     if(build.result == "SUCCESS") {
                         echo "BUILD NUMBER: ${build.number} SUCCESSFULLY BUILD"
+                        // copy provenance file signature to results directory
+                        sh "cp ${signature_file} ${params.resultsPath}/${params.buildID}/"
                     } else {
                         catchError(stageResult: 'FAILURE', buildResult: 'FAILURE') {
                             error("Signature verification failed!!!")
