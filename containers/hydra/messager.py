@@ -57,7 +57,7 @@ parser.add_argument("-f", help='<Slack configuration file>', metavar="file")
 parser.add_argument("-m", help='<Slack message>', metavar="message")
 
 args = parser.parse_args()
-SLACKMESSAGE = args.m or ''f
+SLACKMESSAGE = args.m or ''
 SLACKCONFIGURATIONFILE = args.f or ''
 
 # quick old-school way to check needed parameters
