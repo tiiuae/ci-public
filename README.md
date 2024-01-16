@@ -1,5 +1,5 @@
 <!--
-    Copyright 2022-2023 TII (SSRC) and the Ghaf contributors
+    Copyright 2024 TII (SSRC) and the Ghaf contributors
     SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
@@ -23,6 +23,7 @@ CI/CD related files
 | LICENSES | Licenses used in this repository
 | yubihsm | Yubihsm container stuff
 | sha256tree | [Checksum calculator for directory trees](./sha256tree/sha256tree.md)
+| checksig | [Signature checker script](./checksig/checksig.md)
 
 ## Git commit hook
 
