@@ -1,7 +1,7 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i python3 -p "python3.withPackages(ps: [ ps.slackclient ])"
 #
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
 """"
@@ -68,86 +68,116 @@ if (SLACKMESSAGE == '' or SLACKCONFIGURATIONFILE == ''):
 
 file_exists = os.path.exists(SLACKCONFIGURATIONFILE)
 
+slacktoken = badcommand = badslackchannel = goodcommand = goodslackchannel = None
+
 if file_exists:
-
     print("Slack configuration file exists. Going try to do the messaging", file=sys.stderr)
-    file = open(SLACKCONFIGURATIONFILE, "r", encoding="utf-8")
-    config_array = file.read().splitlines()
 
-    if len(config_array) > 2:
-        slacktoken = str(config_array[0])
-        badcommand,badslackchannel = (str(config_array[1]).split())
-        goodcommand,goodslackchannel = (str(config_array[2]).split())
-    else:
-        print(f"Error in configuration file: {SLACKCONFIGURATIONFILE}. Did not find 3 lines of neede definitions")
+    try:
+        file = open(SLACKCONFIGURATIONFILE, "r", encoding="utf-8")
+        config_array = file.read().splitlines()
 
-    print (f"goodcommand: {goodcommand}, goodchannel: {goodslackchannel}")
-    print (f"bandcommand: {badcommand}, badchannel: {badslackchannel}")
+        if len(config_array) == 3:
+            slacktoken = str(config_array[0])
 
-   # TESTING WITHOUT BUILD AS STANDALONE COMMAND: set buildStatNbr 0 (ok build) or >1 (failed build) 
-   # buildStatNbr=1
+            if (len(config_array[1].split()) != 2 or len(config_array[2].split()) != 2):
+                raise ValueError(
+                    "Invalid file format.Expecting: ON/OFF channelname")
 
-    hydraserver = os.getenv("POSTBUILD_SERVER")
-    if hydraserver is None:
-        print("No Hydra server defined", file=sys.stderr)
-        HYDRASERVER = ""
-    else:
-        HYDRASERVER = "\nHydra server:"+hydraserver
+            badcommand, badslackchannel = (
+                str(config_array[1]).split(maxsplit=1))
+            if (badcommand not in {"ON", "OFF"}):
+                raise ValueError(
+                    "Invalid command in the second line. Use 'ON' or 'OFF'.")
 
-    hydradata = os.getenv("HYDRA_JSON")
-    if hydradata is None:
-        print("No Hydra JSON defined", file=sys.stderr)
-    else:
-        with open(hydradata) as jsonf:
-            binfo = json.load(jsonf)
-            # prettyinfo=json.dumps(binfo,indent=3)
-            buildjob = str(binfo['job'])
-            buildstatus = str(binfo['buildStatus'])
-            buildStatNbr= int(buildstatus)
-            buildnumber = str(binfo['build'])
-            buildproject = str(binfo['project'])
+            goodcommand, goodslackchannel = (
+                str(config_array[2]).split(maxsplit=1))
+            if (goodcommand not in {"ON", "OFF"}):
+                raise ValueError(
+                    "Invalid command in the third line. Use 'ON' or 'OFF'.")
+        else:
+            print(
+                f"Error in configuration file: {SLACKCONFIGURATIONFILE}. Did not find 3 lines of needed definitions")
+            sys.exit(5)
 
-            message_dict = {
-                None: "False build! Did not finish, maybe evaluation failed ??",
-                0: "OK build !!!",
-                1: "Failed build, no other information !!!",
-                2: "Dependency failed build !!!",
-                3: "Aborted build !!!",
-                4: "Cancelled by the user build !!!",
-                5: "Failed build by undefined reason !!!",
-                6: "Failed with output build !!!",
-                7: "Timed out build !!!",
-                8: "Failed build by undefined reason !!!",
-                9: "Aborted build !!!",
-                10: "Log size limit exceed failure build !!!",
-                11: "Output size limit exceed build !!!"
-            }
+        print(f"goodcommand: {goodcommand}, goodchannel: {goodslackchannel}")
+        print(f"badcommand: {badcommand}, badchannel: {badslackchannel}")
 
-            SLACKMESSAGE = message_dict.get(int(
-                buildstatus),  "Broken build for some undefined reason, maybe future error message ???")
+    except ValueError as ve:
+        print(f"Configuration error: {ve}", file=sys.stderr)
+        sys.exit(6)
 
-            SLACKMESSAGE = SLACKMESSAGE+HYDRASERVER+"\nHydra build:" + \
-                str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:" + \
-                buildnumber+"\nProject:"+buildproject
+    except Exception as e:
+        print(f"Error reading configuration file: {e}", file=sys.stderr)
+        sys.exit(7)
 
-    if (buildStatNbr==0):
-        doit=goodcommand
-        slackchannel=goodslackchannel
-    else:
-        doit=badcommand
-        slackchannel=badslackchannel
-
-    if (doit=="ON"):
-        try:
-            client = slack.WebClient(token=slacktoken)
-            client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
-            print (f"Asked Slack to process our message (channel: {slackchannel})")
-
-        except Exception as e:
-            print(f"Slacking failed! Check your channel name?, error: {e}")
-            sys.exit(1)
-    else:
-        print (f"Slacking not ON for channel: {slackchannel}. Not going to Slack!")
- 
 else:
-    print("No Slack configuration file found. Doing nothing", file=sys.stderr)
+    print(
+        f"Error: Slack configuration file not found at {SLACKCONFIGURATIONFILE}", file=sys.stderr)
+    sys.exit(4)
+
+
+# TESTING WITHOUT BUILD AS STANDALONE COMMAND: set buildStatNbr 0 (ok build) or >1 (failed build)
+# buildStatNbr=1
+
+hydraserver = os.getenv("POSTBUILD_SERVER")
+if hydraserver is None:
+    print("No Hydra server defined", file=sys.stderr)
+    HYDRASERVER = ""
+else:
+    HYDRASERVER = "\nHydra server:"+hydraserver
+
+hydradata = os.getenv("HYDRA_JSON")
+if hydradata is None:
+    print("No Hydra JSON defined", file=sys.stderr)
+else:
+    with open(hydradata) as jsonf:
+        binfo = json.load(jsonf)
+        # prettyinfo=json.dumps(binfo,indent=3)
+        buildjob = str(binfo['job'])
+        buildstatus = str(binfo['buildStatus'])
+        buildStatNbr = int(buildstatus)
+        buildnumber = str(binfo['build'])
+        buildproject = str(binfo['project'])
+
+        message_dict = {
+            None: "False build! Did not finish, maybe evaluation failed ??",
+            0: "OK build !!!",
+            1: "Failed build, no other information !!!",
+            2: "Dependency failed build !!!",
+            3: "Aborted build !!!",
+            4: "Cancelled by the user build !!!",
+            5: "Failed build by undefined reason !!!",
+            6: "Failed with output build !!!",
+            7: "Timed out build !!!",
+            8: "Failed build by undefined reason !!!",
+            9: "Aborted build !!!",
+            10: "Log size limit exceed failure build !!!",
+            11: "Output size limit exceed build !!!"
+        }
+
+        SLACKMESSAGE = message_dict.get(int(
+            buildstatus),  "Broken build for some undefined reason, maybe future error message ???")
+
+        SLACKMESSAGE = SLACKMESSAGE+HYDRASERVER+"\nHydra build:" + \
+            str(buildjob)+"\nStatus:"+buildstatus+"\nNumber:" + \
+            buildnumber+"\nProject:"+buildproject
+
+if (buildStatNbr == 0):
+    doit = goodcommand
+    slackchannel = goodslackchannel
+else:
+    doit = badcommand
+    slackchannel = badslackchannel
+
+if (doit == "ON"):
+    try:
+        client = slack.WebClient(token=slacktoken)
+        client.chat_postMessage(channel=slackchannel, text=SLACKMESSAGE)
+        print(f"Asked Slack to process our message (channel: {slackchannel})")
+
+    except Exception as e:
+        print(f"Slacking failed! Check your channel name?, error: {e}")
+        sys.exit(1)
+else:
+    print(f"Slacking not ON for channel: {slackchannel}. Not going to Slack!")
