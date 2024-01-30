@@ -33,6 +33,10 @@ HC_REMOTE_BUILDERS=no
 # if "yes", allow use of substitutes
 HC_SUBSTITUTES=no
 
+# If "no",  container is not restarted on reboot
+# if "yes", the container restart policy is set to 'always'
+HC_CONTAINER_RESTART=no
+
 # Entries to add to the container hosts file (for address resolution).
 declare -a HC_CUSTOM_HOSTS
 #HC_CUSTOM_HOSTS=("hostname1:ip1" "hostname2:ip2")
