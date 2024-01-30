@@ -218,6 +218,11 @@ if [ -t 0 ] && [ -t 1 ]; then
     EXTRA_FLAGS+=" -i"
 fi
 
+# set restart policy if configured
+if [ "${HC_RESTART_CONTAINER}" == "yes" ]; then
+    EXTRA_FLAGS+=" --restart always"
+fi
+
 # Regular run
 # shellcheck disable=SC2086 # EXTRA_FLAGS, MOUNTS and HOSTS purposefully unquoted
 docker run \
