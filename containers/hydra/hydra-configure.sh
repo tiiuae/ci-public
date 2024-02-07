@@ -26,9 +26,19 @@ export HYDRACTL_USERNAME="automation"
 
 # TODO: All this should come from a configuration layer, and not be
 #       hardcoded guesses of what is wanted
+
+# ghaf
 python3 "$HYDRACTL" "$SERVER" AP -p ghaf -D ghaf
 
 python3 "$HYDRACTL" \
         "$SERVER" AJ \
         -p ghaf -j ghaf -D ghaf \
         -t flake -f git+https://github.com/tiiuae/ghaf/
+
+# FMO
+python3 "$HYDRACTL" "$SERVER" AP -p fmo -D FMO
+
+python3 "$HYDRACTL" \
+        "$SERVER" AJ \
+        -p fmo -j fmo -D FMO \
+        -t flake -f git+https://github.com/tiiuae/FMO-OS/
