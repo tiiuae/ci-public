@@ -223,7 +223,7 @@ find "$WU_UPLOADED_DIR" -mindepth 1 -type d -empty -delete
                     date "+%H:%M:%S Uploading $FN"
                     if scp -B -s -i "$WEB_SFTP_KEY_FILE" -P "$WEB_SSH_PORT" "$FN" "${WEB_SFTP_USER}@${WEB_SERVER}:/upload/${DIR}"; then
                         date "+%H:%M:%S Running trigger for $BN"
-                        if ssh -n -o BatchMode=yes -i "$WEB_TRIG_KEY_FILE" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "${DIR}${BN}"; then
+                        if ssh -n -o BatchMode=yes -i "$WEB_TRIG_KEY_FILE" -p "$WEB_SSH_PORT" "${WEB_TRIG_USER}@${WEB_SERVER}" -- "${DIR}${BN}"; then
                             # Move to uploaded
                             mkdir -p "${WU_UPLOADED_DIR}/${JOB}"
                             mv -f "$FN" "${WU_UPLOADED_DIR}/${JOB}"
