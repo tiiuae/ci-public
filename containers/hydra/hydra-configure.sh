@@ -41,4 +41,4 @@ python3 "$HYDRACTL" "$SERVER" AP -p fmo -D FMO
 python3 "$HYDRACTL" \
         "$SERVER" AJ \
         -p fmo -j fmo -D FMO \
-        -t flake -f git+https://github.com/tiiuae/FMO-OS/
+        -t flake -f git+https://github.com/tiiuae/FMO-OS/?branch=target_for_public_build
