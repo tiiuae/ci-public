@@ -33,7 +33,7 @@ else
   ln -s /home/hydra/confs/machines /etc/nix/
 fi
 
-nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/ github:hercules-ci/ github:NixOS/ github:aldoborrero/ github:numtide/ github:nix-systems/ github:srid/ github:nix-community/ github:anduril/ github:astro/ github:cachix/"
+nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/ github:hercules-ci/ github:tiiuae/ github:NixOS/ github:aldoborrero/ github:numtide/ github:nix-systems/ github:srid/ github:nix-community/ github:anduril/ github:astro/ github:cachix/"
 nix_conf_line "post-build-hook" "/setup/pbhook.sh"
 nix_conf_line "system-features" "nixos-test benchmark big-parallel kvm"
 nix_conf_line "experimental-features" "nix-command flakes"
