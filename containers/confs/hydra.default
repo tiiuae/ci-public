@@ -6,8 +6,10 @@
 # Version information for the benefit of external scripts
 # sourcing hydra.default.
 # - "ganymede", Q3/23
+# - "themisto", Q4/23
+# - "himalia",  Q2/24
 # - "callisto", the development version
-HC_VERSION_NAME="callisto"
+HC_VERSION_NAME="himalia"
 
 HC_PORT=3001
 HC_BASE_LABEL="hydra"
