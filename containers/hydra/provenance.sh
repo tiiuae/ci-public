@@ -21,8 +21,8 @@ trap 'rm -rf -- "$TMP_DIR"' EXIT
 cd "$TMP_DIR" || exit 1
 SAVE_AS="${TMP_DIR}/${PROVENANCE_FILENAME}"
 
-# generate buildtime sbom (and suppress noisy stdout)
-sbomnix "$OUTPUT_PATH" --type=buildtime --depth=1 > /dev/null 2>&1
+# generate buildtime sbom
+sbomnix "$OUTPUT_PATH" --buildtime --depth=1
 
 # tell shellcheck to ignore that this file doesn't exist
 # (file is generated in run_hydra.sh)
