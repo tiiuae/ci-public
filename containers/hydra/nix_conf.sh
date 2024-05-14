@@ -37,6 +37,7 @@ nix_conf_line "allowed-uris" "https://github.com/ https://source.codeaurora.org/
 nix_conf_line "post-build-hook" "/setup/pbhook.sh"
 nix_conf_line "system-features" "nixos-test benchmark big-parallel kvm"
 nix_conf_line "experimental-features" "nix-command flakes"
+nix_conf_line "extra-platforms" "i686-linux"
 
 # This requires --privileged container.
 nix_conf_line "sandbox" "true"
