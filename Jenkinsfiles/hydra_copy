@@ -120,7 +120,7 @@ pipeline {
                             } catch (err) {
                                 println("Something went wrong at post processing of: ${buildId} failed: ${err}")
                             }
-                        } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug.x86_64-linux")) {
+                        } else if ("${buildData['Job']}".contains("microchip-icicle-kit-debug-from-x86_64")) {
                             try {
                                 build job: "${processingJob}", parameters: [
                                     [$class: 'StringParameterValue', name: 'outputPath', value: "${outputPath}"],
