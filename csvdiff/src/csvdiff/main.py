@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=invalid-name, protected-access, too-many-locals
+# pylint: disable=protected-access, too-many-locals
 # pylint: disable=too-many-branches, too-many-statements
 
 """ Python script for comparing two csv files """
